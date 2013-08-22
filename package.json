@@ -20,5 +20,8 @@
   "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/julianlam/nodebb-plugin-mentions/issues"
+  },
+  "dependencies": {
+    "async": "~0.2.9"
   }
 }
