@@ -1,0 +1,10 @@
+{
+	"id": "nodebb-plugin-mentions",
+	"name": "Username Mentions",
+	"description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their username",
+	"url": "https://github.com/julianlam/nodebb-plugin-mentions",
+	"library": "./library.js",
+	"hooks": [
+		{ "hook": "filter:post.get", "method": "addMentions", "callbacked": true }
+	]
+}
