@@ -5,6 +5,7 @@
 	"url": "https://github.com/julianlam/nodebb-plugin-mentions",
 	"library": "./library.js",
 	"hooks": [
-		{ "hook": "filter:post.get", "method": "addMentions", "callbacked": true }
+		{ "hook": "filter:post.get", "method": "addMentions", "callbacked": true },
+		{ "hook": "action:post.save", "method": "notify" }
 	]
 }
