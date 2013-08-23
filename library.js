@@ -48,19 +48,29 @@ var	async = require('async'),
 				postContent = postObj.content,
 				regex = /(@\b[\w\d\-_]+\b)/g,
 				relativeUrl = global.nconf.get('relative_url') || '',
-				matches = postContent.match(regex);
+				matches = postContent.match(regex),
+				uniqueMatches = [];
 
 			if (matches) {
-				async.filter(matches, function(match, next) {
-					var	userslug = match.slice(1);
-					_self.exists(userslug, next);
-				}, function(matches) {
-					matches.forEach(function(match) {
-						var	userslug = match.slice(1);
-						postObj.content = postContent.replace(match, '<a class="plugin-mentions-a" href="' + relativeUrl + '/users/' + userslug + '">' + match + '</a>');
+				// Validate matches
+				matches.forEach(function(match) {
+					if (uniqueMatches.indexOf(match) === -1) uniqueMatches.push(match);
+				});
+				async.filter(uniqueMatches, function(match, next) {
+					var	slug = match.slice(1);
+					User.exists(slug, function(exists) {
+						next(exists);
 					});
-
-					callback(null, postObj);
+				}, function(matches) {
+					if (matches) {
+						postObj.content = postObj.content.replace(regex, function(match) {
+							if (matches.indexOf(match) !== -1) {
+								var	userslug = match.slice(1);
+								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/users/' + userslug + '">' + match + '</a>'
+							} else return match;
+						});
+						callback(null, postObj);
+					} else callback(null, postObj);
 				});
 			} else callback(null, postObj);
 		}
