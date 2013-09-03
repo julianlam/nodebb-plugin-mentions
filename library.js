@@ -43,9 +43,8 @@ var	async = require('async'),
 				});
 			}
 		},
-		addMentions: function(postObj, callback) {
+		addMentions: function(postContent, callback) {
 			var	_self = this,
-				postContent = postObj.content,
 				regex = /(@\b[\w\d\-_]+\b)/g,
 				relativeUrl = global.nconf.get('relative_url') || '',
 				matches = postContent.match(regex),
@@ -63,16 +62,16 @@ var	async = require('async'),
 					});
 				}, function(matches) {
 					if (matches) {
-						postObj.content = postObj.content.replace(regex, function(match) {
+						postContent = postContent.replace(regex, function(match) {
 							if (matches.indexOf(match) !== -1) {
 								var	userslug = match.slice(1);
 								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/users/' + userslug + '">' + match + '</a>'
 							} else return match;
 						});
-						callback(null, postObj);
-					} else callback(null, postObj);
+						callback(null, postContent);
+					} else callback(null, postContent);
 				});
-			} else callback(null, postObj);
+			} else callback(null, postContent);
 		}
 	};
 
