@@ -1,13 +1,8 @@
 var	async = require('async'),
-	Topics = require('../../src/topics'),
-	User = require('../../src/user'),
-	Notifications = require('../../src/notifications'),
+	Topics = module.parent.require('./topics'),
+	User = module.parent.require('./user'),
+	Notifications = module.parent.require('./notifications'),
 	Mentions = {
-		exists: function(slug, callback) {
-			RDB.get('userslug:' + slug + ':uid', function(err, uid) {
-				callback(!!uid);
-			});
-		},
 		notify: function(postData) {
 			var	_self = this,
 				regex = /(@\b[\w\d\-_]+\b)/g,
@@ -16,7 +11,7 @@ var	async = require('async'),
 			if (matches) {
 				async.filter(matches, function(match, next) {
 					var	slug = match.slice(1);
-					_self.exists(slug, next);
+					User.exists(slug, next);
 				}, function(matches) {
 					async.parallel({
 						title: function(next) {
