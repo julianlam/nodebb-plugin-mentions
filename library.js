@@ -1,4 +1,5 @@
 var	async = require('async'),
+	nconf = module.parent.require('nconf'),
 	Topics = module.parent.require('./topics'),
 	User = module.parent.require('./user'),
 	Notifications = module.parent.require('./notifications'),
@@ -41,7 +42,7 @@ var	async = require('async'),
 		addMentions: function(postContent, callback) {
 			var	_self = this,
 				regex = /(@\b[\w\d\-_]+\b)/g,
-				relativeUrl = global.nconf.get('relative_url') || '',
+				relativeUrl = nconf.get('relative_url') || '',
 				matches = postContent.match(regex),
 				uniqueMatches = [];
 
@@ -60,7 +61,7 @@ var	async = require('async'),
 						postContent = postContent.replace(regex, function(match) {
 							if (matches.indexOf(match) !== -1) {
 								var	userslug = match.slice(1);
-								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/users/' + userslug + '">' + match + '</a>'
+								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/users/' + userslug + '">' + match + '</a>';
 							} else return match;
 						});
 						callback(null, postContent);
