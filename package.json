@@ -22,7 +22,6 @@
     "url": "https://github.com/julianlam/nodebb-plugin-mentions/issues"
   },
   "dependencies": {
-    "async": "~0.2.9",
-    "nconf": "~0.6.7"
+    "async": "~0.2.9"
   }
 }
