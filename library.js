@@ -1,5 +1,5 @@
 var	async = require('async'),
-	nconf = require('nconf'),
+	nconf = module.parent.require('nconf'),
 	Topics = module.parent.require('./topics'),
 	User = module.parent.require('./user'),
 	Notifications = module.parent.require('./notifications'),
