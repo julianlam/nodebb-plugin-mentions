@@ -61,7 +61,7 @@ var	async = require('async'),
 						postContent = postContent.replace(regex, function(match) {
 							if (matches.indexOf(match) !== -1) {
 								var	userslug = match.slice(1);
-								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/users/' + userslug + '">' + match + '</a>';
+								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>';
 							} else return match;
 						});
 						callback(null, postContent);
