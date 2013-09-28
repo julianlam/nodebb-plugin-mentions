@@ -24,9 +24,7 @@ var	async = require('async'),
 						uids: function(next) {
 							async.map(matches, function(match, next) {
 								var	slug = match.slice(1);
-								User.get_uid_by_userslug(slug, function(uid) {
-									next(null, uid);
-								});
+								User.get_uid_by_userslug(slug, next);
 							}, next);
 						}
 					}, function(err, results) {
@@ -53,9 +51,7 @@ var	async = require('async'),
 				});
 				async.filter(uniqueMatches, function(match, next) {
 					var	slug = match.slice(1);
-					User.exists(slug, function(exists) {
-						next(exists);
-					});
+					User.exists(slug, next);
 				}, function(matches) {
 					if (matches) {
 						postContent = postContent.replace(regex, function(match) {
