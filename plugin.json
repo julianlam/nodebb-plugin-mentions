@@ -7,5 +7,9 @@
 	"hooks": [
 		{ "hook": "filter:post.parse", "method": "addMentions", "callbacked": true },
 		{ "hook": "action:post.save", "method": "notify" }
+	],
+	"staticDir": "./static",
+	"css": [
+		"style.css"
 	]
 }
