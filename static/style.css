@@ -6,3 +6,15 @@
 	font-size: 0.9em;
 	padding: 0.1em 0.3em;
 }
+
+.plugin-mentions-a i {
+	font-size: 0.9em;
+}
+
+.plugin-mentions-a i.online {
+	color: #468847;
+}
+
+.plugin-mentions-a i.offline {
+	color: #b94a48;
+}

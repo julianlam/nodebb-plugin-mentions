@@ -4,6 +4,7 @@ var	async = require('async'),
 	User = module.parent.require('./user'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
+	websockets = module.parent.require('./websockets'),
 	Mentions = {
 		notify: function(postData) {
 			var	_self = this,
@@ -60,7 +61,7 @@ var	async = require('async'),
 						postContent = postContent.replace(regex, function(match) {
 							if (matches.indexOf(match) !== -1) {
 								var	userslug = match.slice(1);
-								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>';
+								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="icon-user"></i> ' + match + '</a>';
 							} else return match;
 						});
 						callback(null, postContent);
