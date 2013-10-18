@@ -3,6 +3,7 @@ var	async = require('async'),
 	Topics = module.parent.require('./topics'),
 	User = module.parent.require('./user'),
 	Notifications = module.parent.require('./notifications'),
+	Utils = module.parent.require('../public/src/utils'),
 	Mentions = {
 		notify: function(postData) {
 			var	_self = this,
@@ -45,12 +46,14 @@ var	async = require('async'),
 				uniqueMatches = [];
 
 			if (matches) {
-				// Validate matches
+				// Eliminate duplicates
 				matches.forEach(function(match) {
 					if (uniqueMatches.indexOf(match) === -1) uniqueMatches.push(match);
 				});
+
+				// Filter out those that aren't real users
 				async.filter(uniqueMatches, function(match, next) {
-					var	slug = match.slice(1);
+					var	slug = Utils.slugify(match.slice(1));
 					User.exists(slug, next);
 				}, function(matches) {
 					if (matches) {
