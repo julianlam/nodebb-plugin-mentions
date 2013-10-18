@@ -58,13 +58,15 @@ var	async = require('async'),
 					User.exists(slug, next);
 				}, function(matches) {
 					if (matches) {
-						postContent = postContent.replace(regex, function(match) {
-							if (matches.indexOf(match) !== -1) {
-								var	userslug = match.slice(1);
-								return '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="icon-user"></i> ' + match + '</a>';
-							} else return match;
+						async.each(matches, function(match, next) {
+							var	userslug = Utils.slugify(match.slice(1));
+							User.get_uid_by_userslug(userslug, function(err, uid) {
+								postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="icon-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+								next();
+							});
+						}, function(err) {
+							callback(null, postContent);
 						});
-						callback(null, postContent);
 					} else callback(null, postContent);
 				});
 			} else callback(null, postContent);
