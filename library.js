@@ -13,7 +13,7 @@ var	async = require('async'),
 
 			if (matches) {
 				async.filter(matches, function(match, next) {
-					var	slug = match.slice(1);
+					var	slug = Utils.slugify(match.slice(1));
 					User.exists(slug, next);
 				}, function(matches) {
 					async.parallel({
@@ -25,7 +25,7 @@ var	async = require('async'),
 						},
 						uids: function(next) {
 							async.map(matches, function(match, next) {
-								var	slug = match.slice(1);
+								var	slug = Utils.slugify(match.slice(1));
 								User.getUidByUserslug(slug, next);
 							}, next);
 						}
