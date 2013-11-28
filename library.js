@@ -61,7 +61,7 @@ var	async = require('async'),
 						async.each(matches, function(match, next) {
 							var	userslug = Utils.slugify(match.slice(1));
 							User.getUidByUserslug(userslug, function(err, uid) {
-								postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="icon-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+								postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
 								next();
 							});
 						}, function(err) {
