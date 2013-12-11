@@ -31,7 +31,7 @@ var	async = require('async'),
 						}
 					}, function(err, results) {
 						if (!err) {
-							Notifications.create('<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"', '/topic/' + postData.tid, 'mention:' + postData.tid, function(nid) {
+							Notifications.create('<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"', '/topic/' + postData.tid, 'topic:' + postData.tid, function(nid) {
 								Notifications.push(nid, results.uids);
 							});
 						}
