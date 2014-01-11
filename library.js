@@ -6,7 +6,7 @@ var	async = require('async'),
 	User = module.parent.require('./user'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
-	websockets = module.parent.require('./websockets');
+	websockets = module.parent.require('./socket.io');
 
 var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
 	Mentions = {};
