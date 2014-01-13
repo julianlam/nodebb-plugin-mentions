@@ -16,6 +16,11 @@ Mentions.notify = function(postData) {
 		matches = postData.content.match(regex);
 
 	if (matches) {
+		// Eliminate duplicates
+		matches = matches.filter(function(cur, idx) {
+			return idx === matches.indexOf(cur);
+		});
+
 		async.filter(matches, function(match, next) {
 			var	slug = Utils.slugify(match.slice(1));
 			User.exists(slug, next);
@@ -47,20 +52,20 @@ Mentions.notify = function(postData) {
 Mentions.addMentions = function(postContent, callback) {
 	var	_self = this,
 		relativeUrl = nconf.get('relative_url') || '',
-		matches = postContent.match(regex),
-		uniqueMatches = [];
-	
+		matches = postContent.match(regex);
+
 	if (matches) {
-		matches.forEach(function(match) {
-			if (uniqueMatches.indexOf(match) === -1) uniqueMatches.push(match);
+		// Eliminate duplicates
+		matches = matches.filter(function(cur, idx) {
+			return idx === matches.indexOf(cur);
 		});
-	
-		async.each(uniqueMatches, function(match, next) {
+
+		async.each(matches, function(match, next) {
 			var userslug = Utils.slugify(match.slice(1));
 			User.getUidByUserslug(userslug, function(err, uid) {
 				if(uid) {
 					postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
-				}	
+				}
 				next();
 			});
 		}, function(err) {
