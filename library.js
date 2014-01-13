@@ -49,29 +49,22 @@ Mentions.addMentions = function(postContent, callback) {
 		relativeUrl = nconf.get('relative_url') || '',
 		matches = postContent.match(regex),
 		uniqueMatches = [];
-
+	
 	if (matches) {
-		// Eliminate duplicates
 		matches.forEach(function(match) {
 			if (uniqueMatches.indexOf(match) === -1) uniqueMatches.push(match);
 		});
-
-		// Filter out those that aren't real users
-		async.filter(uniqueMatches, function(match, next) {
-			var	slug = Utils.slugify(match.slice(1));
-			User.exists(slug, next);
-		}, function(matches) {
-			if (matches) {
-				async.each(matches, function(match, next) {
-					var	userslug = Utils.slugify(match.slice(1));
-					User.getUidByUserslug(userslug, function(err, uid) {
-						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
-						next();
-					});
-				}, function(err) {
-					callback(null, postContent);
-				});
-			} else callback(null, postContent);
+	
+		async.each(uniqueMatches, function(match, next) {
+			var userslug = Utils.slugify(match.slice(1));
+			User.getUidByUserslug(userslug, function(err, uid) {
+				if(uid) {
+					postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+				}	
+				next();
+			});
+		}, function(err) {
+			callback(null, postContent);
 		});
 	} else callback(null, postContent);
 };
