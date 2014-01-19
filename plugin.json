@@ -6,7 +6,9 @@
 	"library": "./library.js",
 	"hooks": [
 		{ "hook": "filter:post.parse", "method": "addMentions", "callbacked": true },
-		{ "hook": "action:post.save", "method": "notify" }
+		{ "hook": "action:post.save", "method": "notify" },
+        { "hook": "filter:scripts.get", "method": "addScripts", "callbacked": false },
+        { "hook": "action:app.load", "method": "addSockets", "callbacked": false }
 	],
 	"staticDir": "./static",
 	"css": [
