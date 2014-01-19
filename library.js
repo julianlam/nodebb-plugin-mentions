@@ -6,7 +6,8 @@ var	async = require('async'),
 	User = module.parent.require('./user'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
-	websockets = module.parent.require('./socket.io');
+	websockets = module.parent.require('./socket.io'),
+    ModulesSockets = module.parent.require('./socket.io/modules');
 
 var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
 	Mentions = {};
@@ -72,6 +73,45 @@ Mentions.addMentions = function(postContent, callback) {
 			callback(null, postContent);
 		});
 	} else callback(null, postContent);
+};
+
+Mentions.addScripts = function(scripts) {
+    return scripts.concat([
+        'plugins/nodebb-plugin-mentions/autofill.js',
+        'plugins/nodebb-plugin-mentions/jquery.textcomplete.js'
+    ]);
+}
+
+Mentions.addSockets = function() {
+    ModulesSockets.composer.autofill = Mentions.sockets.autofill;
+}
+
+Mentions.sockets = {
+    'autofill': function(socket, data, callback) {
+        Mentions.autoFill(data, callback);
+    }
+}
+
+Mentions.autoFill = function (slugs, callback) {
+    var uids = [];
+
+    function getUid(slug, next) {
+        User.getUidByUserslug(slug, function(err, uid){
+            uids.push(uid);
+            next(null);
+        });
+    }
+
+    async.eachSeries(slugs, getUid, function(err) {
+        if (!err) {
+            User.getUsernamesByUids(uids, function(usernames) {
+                usernames.sort(function(a, b) {
+                    return a.toUpperCase().localeCompare(b.toUpperCase());
+                });
+                callback(null, usernames);
+            });
+        }
+    });
 };
 
 module.exports = Mentions;
