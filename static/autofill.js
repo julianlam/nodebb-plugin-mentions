@@ -6,12 +6,11 @@ $(document).ready(function() {
                 {
                     match: /\B@(\w*)$/,
                     search: function (term, callback) {
-                        socket.emit('modules.composer.autofill', getUniqueUserslugs(), function(err, data) {
+                        socket.emit('modules.composer.autofill', {'slugs': getUniqueUserslugs(), 'term': term}, function(err, data) {
                             callback(data);
                         });
                     },
                     index: 1,
-                    maxCount: 5,
                     replace: function (mention) {
                         return '@' + mention + ' ';
                     },

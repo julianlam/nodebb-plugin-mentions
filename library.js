@@ -7,7 +7,7 @@ var	async = require('async'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
 	websockets = module.parent.require('./socket.io'),
-    ModulesSockets = module.parent.require('./socket.io/modules');
+  ModulesSockets = module.parent.require('./socket.io/modules');
 
 var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
 	Mentions = {};
@@ -92,22 +92,25 @@ Mentions.sockets = {
     }
 }
 
-Mentions.autoFill = function (slugs, callback) {
+Mentions.autoFill = function (data, callback) {
     var uids = [];
+    var slugs = data.slugs;
+    var term = data.term.toLocaleLowerCase();
 
     function getUid(slug, next) {
-        User.getUidByUserslug(slug, function(err, uid){
-            uids.push(uid);
+        if (slug.indexOf(term) !== -1) {
+            User.getUidByUserslug(slug, function(err, uid){
+                uids.push(uid);
+                next(null);
+            });
+        } else {
             next(null);
-        });
+        }
     }
 
     async.eachSeries(slugs, getUid, function(err) {
         if (!err) {
             User.getUsernamesByUids(uids, function(usernames) {
-                usernames.sort(function(a, b) {
-                    return a.toUpperCase().localeCompare(b.toUpperCase());
-                });
                 callback(null, usernames);
             });
         }
