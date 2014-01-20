@@ -7,7 +7,7 @@ var	async = require('async'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
 	websockets = module.parent.require('./socket.io'),
-    ModulesSockets = module.parent.require('./socket.io/modules');
+  ModulesSockets = module.parent.require('./socket.io/modules');
 
 var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
 	Mentions = {};
@@ -92,25 +92,17 @@ Mentions.sockets = {
     }
 }
 
-Mentions.autoFill = function (slugs, callback) {
-    var uids = [];
-
-    function getUid(slug, next) {
-        User.getUidByUserslug(slug, function(err, uid){
-            uids.push(uid);
-            next(null);
-        });
-    }
-
-    async.eachSeries(slugs, getUid, function(err) {
-        if (!err) {
-            User.getUsernamesByUids(uids, function(usernames) {
-                usernames.sort(function(a, b) {
-                    return a.toUpperCase().localeCompare(b.toUpperCase());
-                });
-                callback(null, usernames);
-            });
+Mentions.autoFill = function (data, callback) {
+    User.search(data.term, function(err, userdata) {
+        if (err) {
+            return callback(null, []);
         }
+
+        callback(null, userdata.map(function(user) {
+            return user.username;
+        }).sort(function(a, b) {							// Sort alphabetically
+            return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+        }));
     });
 };
 
