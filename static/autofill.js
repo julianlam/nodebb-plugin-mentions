@@ -6,7 +6,7 @@ $(document).ready(function() {
                 {
                     match: /\B@(\w*)$/,
                     search: function (term, callback) {
-                        socket.emit('modules.composer.autofill', {'slugs': getUniqueUserslugs(), 'term': term}, function(err, data) {
+                        socket.emit('modules.composer.autofill', {'term': term}, function(err, data) {
                             callback(data);
                         });
                     },
@@ -18,28 +18,6 @@ $(document).ready(function() {
                 }
             ]);
             $('.textcomplete-wrapper').css('height', '100%').find('textarea').css('height', '100%');
-        }
-
-        function getUniqueUserslugs() {
-            var postContainer = $('#post-container');
-            if(postContainer.length) {
-                var elements = $('#post-container li[data-userslug]');
-                if(!elements.length) {
-                    return [];
-                }
-
-                var slugs = [];
-                for(var i=0; i<elements.length; ++i) {
-                    var slug = $(elements[i]).attr('data-userslug');
-                    if(slugs.indexOf(slug) === -1) {
-                        slugs.push(slug);
-                    }
-                }
-
-                return slugs;
-            } else {
-                return [];
-            }
         }
     });
 });

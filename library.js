@@ -93,27 +93,13 @@ Mentions.sockets = {
 }
 
 Mentions.autoFill = function (data, callback) {
-    var uids = [];
-    var slugs = data.slugs;
-    var term = data.term.toLocaleLowerCase();
-
-    function getUid(slug, next) {
-        if (slug.indexOf(term) !== -1) {
-            User.getUidByUserslug(slug, function(err, uid){
-                uids.push(uid);
-                next(null);
-            });
-        } else {
-            next(null);
+    User.search(data.term, function(err, userdata) {
+        if (err) {
+            return callback(null, []);
         }
-    }
-
-    async.eachSeries(slugs, getUid, function(err) {
-        if (!err) {
-            User.getUsernamesByUids(uids, function(usernames) {
-                callback(null, usernames);
-            });
-        }
+        callback(null, userdata.map(function(user) {
+            return user.username;
+        }));
     });
 };
 
