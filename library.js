@@ -1,20 +1,20 @@
 var	async = require('async'),
-	XRegExp = require('xregexp').XRegExp,
+XRegExp = require('xregexp').XRegExp,
 
-	nconf = module.parent.require('nconf'),
-	Topics = module.parent.require('./topics'),
-	User = module.parent.require('./user'),
-	Notifications = module.parent.require('./notifications'),
-	Utils = module.parent.require('../public/src/utils'),
-	websockets = module.parent.require('./socket.io'),
-  ModulesSockets = module.parent.require('./socket.io/modules');
+nconf = module.parent.require('nconf'),
+Topics = module.parent.require('./topics'),
+User = module.parent.require('./user'),
+Notifications = module.parent.require('./notifications'),
+Utils = module.parent.require('../public/src/utils'),
+websockets = module.parent.require('./socket.io'),
+ModulesSockets = module.parent.require('./socket.io/modules');
 
 var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
-	Mentions = {};
+Mentions = {};
 
 Mentions.notify = function(postData) {
 	var	_self = this,
-		matches = postData.content.match(regex);
+	matches = postData.content.match(regex);
 
 	if (matches) {
 		// Eliminate duplicates
@@ -52,8 +52,8 @@ Mentions.notify = function(postData) {
 
 Mentions.addMentions = function(postContent, callback) {
 	var	_self = this,
-		relativeUrl = nconf.get('relative_url') || '',
-		matches = postContent.match(regex);
+	relativeUrl = nconf.get('relative_url') || '',
+	matches = postContent.match(regex);
 
 	if (matches) {
 		// Eliminate duplicates
@@ -76,34 +76,34 @@ Mentions.addMentions = function(postContent, callback) {
 };
 
 Mentions.addScripts = function(scripts) {
-    return scripts.concat([
-        'plugins/nodebb-plugin-mentions/autofill.js',
-        'plugins/nodebb-plugin-mentions/jquery.textcomplete.js'
-    ]);
+	return scripts.concat([
+		'plugins/nodebb-plugin-mentions/autofill.js',
+		'plugins/nodebb-plugin-mentions/jquery.textcomplete.js'
+	]);
 }
 
 Mentions.addSockets = function() {
-    ModulesSockets.composer.autofill = Mentions.sockets.autofill;
+	ModulesSockets.composer.autofill = Mentions.sockets.autofill;
 }
 
 Mentions.sockets = {
-    'autofill': function(socket, data, callback) {
-        Mentions.autoFill(data, callback);
-    }
+	'autofill': function(socket, data, callback) {
+		Mentions.autoFill(data, callback);
+	}
 }
 
 Mentions.autoFill = function (data, callback) {
-    User.search(data.term, function(err, userdata) {
-        if (err) {
-            return callback(null, []);
-        }
+	User.search(data.term, function(err, userdata) {
+		if (err) {
+			return callback(null, []);
+		}
 
-        callback(null, userdata.map(function(user) {
-            return user.username;
-        }).sort(function(a, b) {							// Sort alphabetically
-            return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-        }));
-    });
+		callback(null, userdata.map(function(user) {
+			return user.username;
+		}).sort(function(a, b) {							// Sort alphabetically
+			return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+		}));
+	});
 };
 
 module.exports = Mentions;
