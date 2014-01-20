@@ -12,7 +12,7 @@ $(document).ready(function() {
                     },
                     index: 1,
                     replace: function (mention) {
-                        return '@' + mention + ' ';
+                        return '@' + utils.slugify(mention) + ' ';
                     },
                     cache: true
                 }
