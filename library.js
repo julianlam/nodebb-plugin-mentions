@@ -100,8 +100,6 @@ Mentions.autoFill = function (data, callback) {
 
         callback(null, userdata.map(function(user) {
             return user.username;
-        }).sort(function(a, b) {							// Sort alphabetically
-            return a.toLocaleLowerCase() > b.toLocaleLowerCase();
         }));
     });
 };

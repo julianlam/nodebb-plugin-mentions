@@ -7,7 +7,9 @@ $(document).ready(function() {
                     match: /\B@(\w*)$/,
                     search: function (term, callback) {
                         socket.emit('modules.composer.autofill', {'term': term}, function(err, data) {
-                            callback(data);
+                            callback(data.sort(function(a, b) {							// Sort alphabetically
+                                return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+                            }));
                         });
                     },
                     index: 1,
