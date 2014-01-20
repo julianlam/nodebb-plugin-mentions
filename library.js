@@ -97,8 +97,11 @@ Mentions.autoFill = function (data, callback) {
         if (err) {
             return callback(null, []);
         }
+
         callback(null, userdata.map(function(user) {
             return user.username;
+        }).sort(function(a, b) {							// Sort alphabetically
+            return a.toLocaleLowerCase() > b.toLocaleLowerCase();
         }));
     });
 };
