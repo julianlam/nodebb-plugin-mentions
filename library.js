@@ -24,9 +24,9 @@ Mentions.notify = function(postData) {
 
 		async.filter(matches, function(match, next) {
 			var	slug = Utils.slugify(match.slice(1));
-      User.exists(slug, function(err, exists) {
-          next(exists);
-      });
+			User.exists(slug, function(err, exists) {
+				next(exists);
+			});
 		}, function(matches) {
 			async.parallel({
 				title: function(next) {
@@ -44,9 +44,9 @@ Mentions.notify = function(postData) {
 			}, function(err, results) {
 				if (!err) {
 					Notifications.create('<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"', '/topic/' + postData.tid, 'topic:' + postData.tid, function(nid) {
-            Notifications.push(nid, results.uids.filter(function(uid) {
-                return uid !== postData.uid;
-            }));
+						Notifications.push(nid, results.uids.filter(function(uid) {
+							return uid !== postData.uid;
+						}));
 					});
 				}
 			});
@@ -104,8 +104,6 @@ Mentions.autoFill = function (data, callback) {
 
 		callback(null, userdata.map(function(user) {
 			return user.username;
-		}).sort(function(a, b) {							// Sort alphabetically
-			return a.toLocaleLowerCase() > b.toLocaleLowerCase();
 		}));
 	});
 };
