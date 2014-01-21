@@ -14,7 +14,8 @@ Mentions = {};
 
 Mentions.notify = function(postData) {
 	var	_self = this,
-	matches = postData.content.match(regex);
+		cleanedContent = postData.content.replace(/<blockquote>[\s\S]+?<\/blockquote>/g, ''),	// Removing blockquoted content from the checked string
+		matches = postData.content.match(regex);
 
 	if (matches) {
 		// Eliminate duplicates
