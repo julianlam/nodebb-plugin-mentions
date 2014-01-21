@@ -10,6 +10,7 @@ websockets = module.parent.require('./socket.io'),
 ModulesSockets = module.parent.require('./socket.io/modules');
 
 var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
+	isLatinMention = /@[\w]+$/;
 Mentions = {};
 
 Mentions.notify = function(postData) {
@@ -72,7 +73,11 @@ Mentions.addMentions = function(postContent, callback) {
 			var userslug = Utils.slugify(match.slice(1));
 			User.getUidByUserslug(userslug, function(err, uid) {
 				if(uid) {
-					postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+					if (isLatinMention.test(match)) {
+						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+					} else {
+						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+					}
 				}
 				next();
 			});

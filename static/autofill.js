@@ -4,7 +4,7 @@ $(document).ready(function() {
         if (composer.parent('.textcomplete-wrapper').length === 0) {
             composer.textcomplete([
                 {
-                    match: /\B@(\w*)$/,
+                    match: /\B@([^\s\n]*)$/,
                     search: function (term, callback) {
                         socket.emit('modules.composer.autofill', {'term': term}, function(err, data) {
                             callback(data.sort(function(a, b) {							// Sort alphabetically
@@ -14,7 +14,7 @@ $(document).ready(function() {
                     },
                     index: 1,
                     replace: function (mention) {
-                        return '@' + utils.slugify(mention) + ' ';
+                        return '@' + mention.replace(/\s/g, '-') + ' ';
                     },
                     cache: true
                 }
