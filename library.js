@@ -42,11 +42,13 @@ Mentions.notify = function(postData) {
 					}, next);
 				}
 			}, function(err, results) {
-				if (!err) {
+				var	recipients = results.uids.filter(function(uid) {
+						return parseInt(uid, 10) !== postData.uid;
+					});
+
+				if (!err && recipients.length > 0) {
 					Notifications.create('<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"', '/topic/' + postData.tid, 'topic:' + postData.tid, function(nid) {
-						Notifications.push(nid, results.uids.filter(function(uid) {
-							return parseInt(uid, 10) !== postData.uid;
-						}));
+						Notifications.push(nid, recipients);
 					});
 				}
 			});
