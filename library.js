@@ -45,7 +45,7 @@ Mentions.notify = function(postData) {
 				if (!err) {
 					Notifications.create('<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"', '/topic/' + postData.tid, 'topic:' + postData.tid, function(nid) {
 						Notifications.push(nid, results.uids.filter(function(uid) {
-							return uid !== postData.uid;
+							return parseInt(uid, 10) !== postData.uid;
 						}));
 					});
 				}
