@@ -92,25 +92,27 @@ Mentions.addScripts = function(scripts) {
 		'plugins/nodebb-plugin-mentions/autofill.js',
 		'plugins/nodebb-plugin-mentions/jquery.textcomplete.js'
 	]);
-}
+};
 
 Mentions.addSockets = function() {
 	ModulesSockets.composer.autofill = Mentions.sockets.autofill;
-}
+};
 
 Mentions.sockets = {
 	'autofill': function(socket, data, callback) {
 		Mentions.autoFill(data, callback);
 	}
-}
+};
 
 Mentions.autoFill = function (data, callback) {
 	User.search(data.term, function(err, userdata) {
 		if (err) {
 			return callback(null, []);
 		}
-
-		callback(null, userdata.map(function(user) {
+        if(userdata.hasOwnProperty('users')){
+            userdata = userdata.users;
+        }
+        callback(null, userdata.map(function(user) {
 			return user.username;
 		}));
 	});
