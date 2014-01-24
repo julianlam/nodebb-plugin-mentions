@@ -105,9 +105,7 @@ Mentions.sockets = {
 }
 
 Mentions.autoFill = function (data, callback) {
-	User.search(data.term, function(err, data) {
-		userdata = data.users;
-
+	User.search(data.term, function(err, userdata) {
 		if (err) {
 			return callback(null, []);
 		}
