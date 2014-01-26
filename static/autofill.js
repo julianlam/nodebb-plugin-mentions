@@ -6,6 +6,10 @@ $(document).ready(function() {
 				match: /\B@([^\s\n]*)$/,
 				search: function (term, callback) {
 					socket.emit('user.search', term, function(err, userdata) {
+						if (!Array.isArray(userdata)) {
+							userdata = userdata.users;
+						}
+
 						if (err) {
 							return callback([]);
 						}
