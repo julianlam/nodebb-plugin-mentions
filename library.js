@@ -9,8 +9,8 @@ Utils = module.parent.require('../public/src/utils'),
 websockets = module.parent.require('./socket.io'),
 ModulesSockets = module.parent.require('./socket.io/modules');
 
-var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
-	isLatinMention = /@[\w]+$/;
+var regex = XRegExp('(@[\\p{L}\\d\\-_.]+)', 'g'),
+	isLatinMention = /@[\w\d\-_.]+$/;
 Mentions = {};
 
 Mentions.notify = function(postData) {
@@ -93,27 +93,5 @@ Mentions.addScripts = function(scripts) {
 		'plugins/nodebb-plugin-mentions/jquery.textcomplete.js'
 	]);
 }
-
-Mentions.addSockets = function() {
-	ModulesSockets.composer.autofill = Mentions.sockets.autofill;
-}
-
-Mentions.sockets = {
-	'autofill': function(socket, data, callback) {
-		Mentions.autoFill(data, callback);
-	}
-}
-
-Mentions.autoFill = function (data, callback) {
-	User.search(data.term, function(err, userdata) {
-		if (err) {
-			return callback(null, []);
-		}
-
-		callback(null, userdata.map(function(user) {
-			return user.username;
-		}));
-	});
-};
 
 module.exports = Mentions;
