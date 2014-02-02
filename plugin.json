@@ -7,10 +7,12 @@
 	"hooks": [
 		{ "hook": "filter:post.parse", "method": "addMentions", "callbacked": true },
 		{ "hook": "action:post.save", "method": "notify" },
-        { "hook": "filter:scripts.get", "method": "addScripts", "callbacked": false }
+		{ "hook": "filter:scripts.get", "method": "addScripts", "callbacked": false }
 	],
-	"staticDir": "./static",
+	"staticDirs": {
+		"mentions": "static"
+	},
 	"css": [
-		"style.css"
+		"mentions/style.css"
 	]
 }
