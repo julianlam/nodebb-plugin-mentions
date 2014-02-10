@@ -1,9 +1,10 @@
 $(document).ready(function() {
-	$('body').on('focus', '.composer .title, .composer .write', function(){
-		var composer = $('.composer .write');
+	$(window).on('action:composer.loaded', function(e, data) {
+		var composer = $('#cmp-uuid-' + data.post_uuid + ' .write'),
+			DOMusers = [];
 
 		composer.textcomplete([{
-			match: /\B@([^\s\n]*)$/,
+			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
 				socket.emit('user.search', term, function(err, userdata) {
 					// The following check is only necessary for NodeBB 0.3.x. Remove this for mentions v0.4.0.
