@@ -6,6 +6,7 @@ $(document).ready(function() {
 			match: /\B@([^\s\n]*)$/,
 			search: function (term, callback) {
 				socket.emit('user.search', term, function(err, userdata) {
+					// The following check is only necessary for NodeBB 0.3.x. Remove this for mentions v0.4.0.
 					if (!Array.isArray(userdata)) {
 						userdata = userdata.users;
 					}
@@ -23,7 +24,7 @@ $(document).ready(function() {
 			},
 			index: 1,
 			replace: function (mention) {
-				return '@' + mention.replace(/\s/g, '-') + ' ';
+				return '@' + utils.slugify(mention) + ' ';
 			},
 			cache: true
 		}]);
