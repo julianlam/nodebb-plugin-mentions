@@ -9,7 +9,7 @@ Utils = module.parent.require('../public/src/utils'),
 websockets = module.parent.require('./socket.io'),
 ModulesSockets = module.parent.require('./socket.io/modules');
 
-var regex = XRegExp('(@[\\p{L}\\d\\-_.]+)', 'g'),
+var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
 	isLatinMention = /@[\w\d\-_.]+$/;
 Mentions = {};
 
