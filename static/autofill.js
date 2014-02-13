@@ -35,17 +35,24 @@ $(document).ready(function() {
 						return username.indexOf(term) !== -1;
 					});
 
-					callback(userdata.map(function(user) {
-						return user.username;
-					}).sort(function(a, b) {
-						if (subset.indexOf(a) !== -1 && subset.indexOf(b) === -1) {
-							return -1;
-						} else if (subset.indexOf(a) === -1 && subset.indexOf(b) !== -1) {
-							return 1;
-						} else {
-							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-						}
-					}));
+					var	results = userdata.map(function(user) {
+							return user.username;
+						}).sort(function(a, b) {
+							if (subset.indexOf(a) !== -1 && subset.indexOf(b) === -1) {
+								return -1;
+							} else if (subset.indexOf(a) === -1 && subset.indexOf(b) !== -1) {
+								return 1;
+							} else {
+								return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+							}
+						});
+
+					// Remove current user from suggestions
+					if (app.username && results.indexOf(app.username) !== -1) {
+						results.splice(results.indexOf(app.username), 1);
+					}
+
+					callback(results);
 				});
 			},
 			index: 1,
