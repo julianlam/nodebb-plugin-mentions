@@ -49,7 +49,11 @@ Mentions.notify = function(postData) {
 					});
 
 				if (!err && recipients.length > 0) {
-					Notifications.create('<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"', '/topic/' + postData.tid, 'topic:' + postData.tid, function(nid) {
+					Notifications.create({
+						text: '<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"',
+						path: '/topic/' + postData.tid,
+						uniqueId: 'topic:' + postData.tid
+					}, function(nid) {
 						Notifications.push(nid, recipients);
 					});
 				}
