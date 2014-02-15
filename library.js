@@ -52,7 +52,8 @@ Mentions.notify = function(postData) {
 					Notifications.create({
 						text: '<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"',
 						path: '/topic/' + postData.tid,
-						uniqueId: 'topic:' + postData.tid
+						uniqueId: 'topic:' + postData.tid,
+						from: postData.uid
 					}, function(nid) {
 						Notifications.push(nid, recipients);
 					});
