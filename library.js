@@ -31,8 +31,8 @@ Mentions.notify = function(postData) {
 			});
 		}, function(matches) {
 			async.parallel({
-				title: function(next) {
-					Topics.getTopicField(postData.tid, 'title', next);
+				topic: function(next) {
+					Topics.getTopicFields(postData.tid, ['title', 'slug'], next);
 				},
 				author: function(next) {
 					User.getUserField(postData.uid, 'username', next);
@@ -50,8 +50,8 @@ Mentions.notify = function(postData) {
 
 				if (!err && recipients.length > 0) {
 					Notifications.create({
-						text: '<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.title + '</strong>"',
-						path: '/topic/' + postData.tid,
+						text: '<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.topic.title + '</strong>"',
+						path: '/topic/' + results.topic.slug + '#' + postData.pid,
 						uniqueId: 'topic:' + postData.tid,
 						from: postData.uid
 					}, function(nid) {
