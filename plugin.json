@@ -12,7 +12,7 @@
 	"staticDirs": {
 		"mentions": "static"
 	},
-	"css": [
-		"mentions/style.css"
+	"less": [
+		"static/style.less"
 	]
 }

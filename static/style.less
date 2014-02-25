@@ -1,0 +1,21 @@
+.plugin-mentions-a {
+	color: @state-info-text;
+	background: @state-info-bg;
+	border: 1px solid @state-info-border;
+	border-radius: 3px;
+	font-size: 0.9em;
+	padding: 0.1em 0.3em;
+	white-space: nowrap;
+
+	i {
+		font-size: 0.9em;
+
+		&.online {
+			color: #468847;
+		}
+
+		&.offline {
+			color: #b94a48;
+		}
+	}
+}
