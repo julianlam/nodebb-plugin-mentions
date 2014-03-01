@@ -94,8 +94,8 @@ Mentions.addMentions = function(postContent, callback) {
 
 Mentions.addScripts = function(scripts) {
 	return scripts.concat([
-		'plugins/mentions/autofill.js',
-		'plugins/mentions/jquery.textcomplete.js'
+		'plugins/nodebb-plugin-mentions/scripts/autofill.js',
+		'plugins/nodebb-plugin-mentions/scripts/jquery.textcomplete.js'
 	]);
 }
 

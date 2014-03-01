@@ -10,7 +10,7 @@
 		{ "hook": "filter:scripts.get", "method": "addScripts", "callbacked": false }
 	],
 	"staticDirs": {
-		"mentions": "static"
+		"scripts": "static"
 	},
 	"less": [
 		"static/style.less"
