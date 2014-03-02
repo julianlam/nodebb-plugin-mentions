@@ -6,12 +6,12 @@
 	"library": "./library.js",
 	"hooks": [
 		{ "hook": "filter:post.parse", "method": "addMentions", "callbacked": true },
-		{ "hook": "action:post.save", "method": "notify" },
-		{ "hook": "filter:scripts.get", "method": "addScripts", "callbacked": false }
+		{ "hook": "action:post.save", "method": "notify" }
 	],
-	"staticDirs": {
-		"scripts": "static"
-	},
+	"scripts": [
+		"static/jquery.textcomplete.js",
+		"static/autofill.js"
+	],
 	"less": [
 		"static/style.less"
 	]
