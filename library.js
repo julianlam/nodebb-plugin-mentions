@@ -1,17 +1,16 @@
 var	async = require('async'),
-XRegExp = require('xregexp').XRegExp,
+	XRegExp = require('xregexp').XRegExp,
 
-nconf = module.parent.require('nconf'),
-Topics = module.parent.require('./topics'),
-User = module.parent.require('./user'),
-Notifications = module.parent.require('./notifications'),
-Utils = module.parent.require('../public/src/utils'),
-websockets = module.parent.require('./socket.io'),
-ModulesSockets = module.parent.require('./socket.io/modules');
+	nconf = module.parent.require('nconf'),
+	Topics = module.parent.require('./topics'),
+	User = module.parent.require('./user'),
+	Notifications = module.parent.require('./notifications'),
+	Utils = module.parent.require('../public/src/utils'),
 
-var regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
-	isLatinMention = /@[\w\d\-_.]+$/;
-Mentions = {};
+	regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
+	isLatinMention = /@[\w\d\-_.]+$/,
+
+	Mentions = {};
 
 Mentions.notify = function(postData) {
 	var	_self = this,
@@ -79,9 +78,9 @@ Mentions.addMentions = function(postContent, callback) {
 			User.getUidByUserslug(userslug, function(err, uid) {
 				if(uid) {
 					if (isLatinMention.test(match)) {
-						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>');
 					} else {
-						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '"><i class="fa fa-user ' + (websockets.isUserOnline(uid) ? 'online' : 'offline') + '"></i> ' + match + '</a>');
+						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>');
 					}
 				}
 				next();
