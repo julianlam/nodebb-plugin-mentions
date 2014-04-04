@@ -22,8 +22,8 @@ var	async = require('async'),
 
 Mentions.notify = function(postData) {
 	var	_self = this,
-		cleanedContent = postData.content.replace(/<blockquote>[\s\S]+?<\/blockquote>/g, ''),	// Removing blockquoted content from the checked string
-		matches = postData.content.match(regex);
+		cleanedContent = postData.content.replace(/^>.*$/gm, ''),	// Removing blockquoted content from the checked string
+		matches = cleanedContent.match(regex);
 
 	if (matches) {
 		// Eliminate duplicates
