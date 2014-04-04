@@ -8,12 +8,16 @@ var	async = require('async'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
 
-	regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
+	regex = XRegExp('(@[\\p{L}\\d\\-_.]+)', 'g'),
 	isLatinMention = /@[\w\d\-_.]+$/,
 
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
+	Mentions = {},
 
-	Mentions = {};
+	removePunctuationSuffix = function(string) {
+		return string.replace(/[!?.]*$/, '');
+	};
+
 	SocketPlugins.mentions = {};
 
 Mentions.notify = function(postData) {
@@ -79,6 +83,9 @@ Mentions.addMentions = function(postContent, callback) {
 
 		async.each(matches, function(match, next) {
 			var userslug = Utils.slugify(match.slice(1));
+
+			match = removePunctuationSuffix(match);
+
 			User.getUidByUserslug(userslug, function(err, uid) {
 				if(uid) {
 					if (isLatinMention.test(match)) {

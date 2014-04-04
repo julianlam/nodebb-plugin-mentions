@@ -8,7 +8,15 @@ $(document).ready(function() {
 	$(window).on('action:composer.loaded', function(e, data) {
 		var composer = $('#cmp-uuid-' + data.post_uuid + ' .write'),
 			DOMusers = [],
-			subset;
+			subset,
+
+			collapseSpaces = function(username) {
+				if (typeof username !== 'string') {
+					username = username.toString();
+				}
+
+				return username.replace(/\s/g, '-');
+			};
 
 		// Retrieve DOM users
 		$('.posts [data-pid] .username-field').each(function(idx, el) {
@@ -60,7 +68,7 @@ $(document).ready(function() {
 			},
 			index: 1,
 			replace: function (mention) {
-				return '@' + utils.slugify(mention) + ' ';
+				return '@' + collapseSpaces(mention) + ' ';
 			},
 			cache: true
 		}]);
