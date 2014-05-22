@@ -4,13 +4,17 @@ var	async = require('async'),
 	nconf = module.parent.require('nconf'),
 	Topics = module.parent.require('./topics'),
 	User = module.parent.require('./user'),
+	Groups = module.parent.require('./groups'),
 	Notifications = module.parent.require('./notifications'),
 	Utils = module.parent.require('../public/src/utils'),
 
 	regex = XRegExp('(@[\\p{L}\\d\\-_]+)', 'g'),
 	isLatinMention = /@[\w\d\-_.]+$/,
 
+	SocketPlugins = module.parent.require('./socket.io/plugins'),
+
 	Mentions = {};
+	SocketPlugins.mentions = {};
 
 Mentions.notify = function(postData) {
 	var	_self = this,
@@ -89,6 +93,21 @@ Mentions.addMentions = function(postContent, callback) {
 			callback(null, postContent);
 		});
 	} else callback(null, postContent);
+};
+
+/*
+	WebSocket methods
+*/
+
+SocketPlugins.mentions.listGroups = function(socket, data, callback) {
+	Groups.list({
+		removeEphemeralGroups: true,
+		truncateUserList: true
+	}, function(err, groups) {
+		callback(null, groups.map(function(groupObj) {
+			return groupObj.name;
+		}));
+	});
 };
 
 module.exports = Mentions;
