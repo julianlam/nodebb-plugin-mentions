@@ -86,14 +86,20 @@ Mentions.addMentions = function(postContent, callback) {
 
 			match = removePunctuationSuffix(match);
 
-			User.getUidByUserslug(userslug, function(err, uid) {
-				if(uid) {
+			async.parallel({
+				groupName: async.apply(Groups.exists, match.slice(1)),
+				uid: async.apply(User.getUidByUserslug, userslug)
+			}, function(err, results) {
+				if (results.uid) {
 					if (isLatinMention.test(match)) {
 						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>');
 					} else {
 						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>');
 					}
+				} else if (results.groupName) {
+					postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + match.slice(1) + '">' + match + '</a>');
 				}
+
 				next();
 			});
 		}, function(err) {
