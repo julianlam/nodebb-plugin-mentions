@@ -6,6 +6,7 @@ var	async = require('async'),
 	User = module.parent.require('./user'),
 	Groups = module.parent.require('./groups'),
 	Notifications = module.parent.require('./notifications'),
+	Meta = module.parent.require('./meta'),
 	Utils = module.parent.require('../public/src/utils'),
 
 	regex = XRegExp('(@[\\p{L}\\d\\-_.]+)', 'g'),
@@ -33,7 +34,7 @@ Mentions.notify = function(postData) {
 
 		async.filter(matches, function(match, next) {
 			var	slug = Utils.slugify(match.slice(1));
-			User.exists(slug, function(err, exists) {
+			Meta.userOrGroupExists(slug, function (err, exists) {
 				next(exists);
 			});
 		}, function(matches) {
@@ -44,25 +45,46 @@ Mentions.notify = function(postData) {
 				author: function(next) {
 					User.getUserField(postData.uid, 'username', next);
 				},
-				uids: function(next) {
+				ids: function(next) {
 					async.map(matches, function(match, next) {
 						var	slug = Utils.slugify(match.slice(1));
-						User.getUidByUserslug(slug, next);
+						
+						async.parallel({
+							groupName: async.apply(Groups.exists, slug),
+							uid: async.apply(User.getUidByUserslug, slug)
+						}, function(err, results) {
+							if (results.uid) {
+								next(null, results.uid);
+							} else if (results.groupName) {
+								next(null, slug);
+							}
+						});
 					}, next);
 				}
 			}, function(err, results) {
-				var	recipients = results.uids.filter(function(uid) {
-						return parseInt(uid, 10) !== postData.uid;
+				var	userRecipients = results.ids.filter(function(id) {
+						var	iid = parseInt(id, 10);
+						return !isNaN(iid) && iid !== postData.id;
+					}),
+					groupRecipients = results.ids.filter(function(id) {
+						return isNaN(parseInt(id, 10));
 					});
 
-				if (!err && recipients.length > 0) {
+				if (!err && (userRecipients.length > 0 || groupRecipients.length > 0)) {
 					Notifications.create({
 						text: '<strong>' + results.author + '</strong> mentioned you in "<strong>' + results.topic.title + '</strong>"',
 						path: '/topic/' + results.topic.slug + '#' + postData.pid,
 						uniqueId: 'topic:' + postData.tid,
 						from: postData.uid
 					}, function(nid) {
-						Notifications.push(nid, recipients);
+						if (userRecipients.length > 0) {
+							Notifications.push(nid, userRecipients);
+						}
+						if (groupRecipients.length > 0) {
+							async.each(groupRecipients, function(groupName, next) {
+								Notifications.pushGroup(nid, groupName, next);
+							});
+						}
 					});
 				}
 			});
@@ -82,22 +104,22 @@ Mentions.addMentions = function(postContent, callback) {
 		});
 
 		async.each(matches, function(match, next) {
-			var userslug = Utils.slugify(match.slice(1));
+			var slug = Utils.slugify(match.slice(1));
 
 			match = removePunctuationSuffix(match);
 
 			async.parallel({
-				groupName: async.apply(Groups.exists, match.slice(1)),
-				uid: async.apply(User.getUidByUserslug, userslug)
+				groupName: async.apply(Groups.exists, slug),
+				uid: async.apply(User.getUidByUserslug, slug)
 			}, function(err, results) {
 				if (results.uid) {
 					if (isLatinMention.test(match)) {
-						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>');
+						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 					} else {
-						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + userslug + '">' + match + '</a>');
+						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 					}
 				} else if (results.groupName) {
-					postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + match.slice(1) + '">' + match + '</a>');
+					postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
 				}
 
 				next();
