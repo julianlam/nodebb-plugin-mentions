@@ -17,8 +17,9 @@ var	async = require('async'),
 		return string.replace(/[!?.]*$/, '');
 	},
 
-	Mentions = {},
-	SocketPlugins.mentions = {};
+	Mentions = {};
+
+SocketPlugins.mentions = {};
 
 Mentions.notify = function(postData) {
 	var	_self = this,
@@ -103,14 +104,6 @@ Mentions.addMentions = function(postContent, callback) {
 		});
 
 		async.each(matches, function(match, next) {
-<<<<<<< HEAD
-			var userslug = Utils.slugify(match.slice(1));
-
-			match = removePunctuationSuffix(match);
-
-			User.getUidByUserslug(userslug, function(err, uid) {
-				if(uid) {
-=======
 			var slug = Utils.slugify(match.slice(1));
 
 			match = removePunctuationSuffix(match);
@@ -120,7 +113,6 @@ Mentions.addMentions = function(postContent, callback) {
 				uid: async.apply(User.getUidByUserslug, slug)
 			}, function(err, results) {
 				if (results.uid) {
->>>>>>> group-mentions
 					if (isLatinMention.test(match)) {
 						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 					} else {
