@@ -10,7 +10,3 @@ A link is automatically added to the post.
     npm install nodebb-plugin-mentions
 
 ... or if you're feeling particularly risky, clone this repo and use `npm link` to "install" this plugin.
-
-## Future functionality
-
-* Actual checking to make sure the user mentioned actually exists
