@@ -14,5 +14,3 @@ A link is automatically added to the post.
 ## Future functionality
 
 * Actual checking to make sure the user mentioned actually exists
-* Notification to be sent to users when they are mentioned
-* CSS to make the anchor stand out a bit
