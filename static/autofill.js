@@ -1,7 +1,6 @@
 $(document).ready(function() {
 	var	groups;
 	socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
-		console.log(groupNames);
 		groups = groupNames;
 	});
 
