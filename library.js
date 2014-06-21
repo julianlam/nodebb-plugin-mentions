@@ -76,7 +76,8 @@ Mentions.notify = function(postData) {
 
 				if (!err && (userRecipients.length > 0 || groupRecipients.length > 0)) {
 					Notifications.create({
-						text: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',						path: '/topic/' + results.topic.slug + '#' + postData.pid,
+						bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
+						bodyLong: postData.content,
 						path: '/topic/' + results.topic.slug + (results.index ? '/' + results.index : ''),
 						uniqueId: 'topic:' + postData.tid,
 						from: postData.uid
