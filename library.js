@@ -79,9 +79,13 @@ Mentions.notify = function(postData) {
 						bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 						bodyLong: postData.content,
 						path: '/topic/' + results.topic.slug + (results.index ? '/' + results.index : ''),
-						uniqueId: 'topic:' + postData.tid,
+						uniqueId: 'topic:' + postData.tid + ':uid:' + postData.uid,
+						tid: postData.tid,
 						from: postData.uid
-					}, function(nid) {
+					}, function(err, nid) {
+						if (err) {
+							return; 
+						}
 						if (userRecipients.length > 0) {
 							Notifications.push(nid, userRecipients);
 						}
