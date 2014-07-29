@@ -81,7 +81,8 @@ Mentions.notify = function(postData) {
 						path: '/topic/' + results.topic.slug + (results.index ? '/' + results.index : ''),
 						uniqueId: 'topic:' + postData.tid + ':uid:' + postData.uid,
 						tid: postData.tid,
-						from: postData.uid
+						from: postData.uid,
+						importance: 6
 					}, function(err, nid) {
 						if (err) {
 							return; 
