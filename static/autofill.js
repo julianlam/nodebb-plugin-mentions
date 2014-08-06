@@ -36,10 +36,14 @@ $(document).ready(function() {
 			element.textcomplete([{
 				match: /\B@([^\s\n]*)?$/,
 				search: function (term, callback) {
+					var usernames;
 					if (!term) {
-						return callback(localUserList.concat(Mentions.groups).sort(function(a, b) {
+						usernames = localUserList.concat(Mentions.groups).filter(function(value, index, array) {
+							return array.indexOf(value) === index && value !== app.username;
+						}).sort(function(a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-						}));
+						})
+						return callback(usernames);
 					}
 
 					socket.emit('user.search', term, function(err, userdata) {
@@ -47,37 +51,45 @@ $(document).ready(function() {
 							return callback([]);
 						}
 
-						subset = localUserList.concat(Mentions.groups).filter(function(username) {
-							return username.toLocaleLowerCase().indexOf(term) !== -1;
-						}).map(function(username) {
-								return username.toLocaleLowerCase();
-							});
-
-						var	results = userdata.users.map(function(user) {
+						usernames = userdata.users.map(function(user) {
 							return user.username;
-						}).sort(function(a, b) {
-								if (subset.indexOf(a.toLocaleLowerCase()) !== -1 && subset.indexOf(b.toLocaleLowerCase()) === -1) {
-									return -1;
-								} else if (subset.indexOf(a.toLocaleLowerCase()) === -1 && subset.indexOf(b.toLocaleLowerCase()) !== -1) {
-									return 1;
-								} else {
-									return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-								}
-							});
+						});
+
+						subset = localUserList.concat(Mentions.groups).filter(function(username) {
+							return username.toLocaleLowerCase().indexOf(term.toLocaleLowerCase()) !== -1;
+						});
+
+						usernames = usernames.concat(subset).filter(function(value, index, array) {
+							return array.indexOf(value) === index;
+						});
+
+						subset = subset.map(function(name) {
+							return name.toLocaleLowerCase();
+						});
+
+						usernames.sort(function(a, b) {
+							if (subset.indexOf(a.toLocaleLowerCase()) !== -1 && subset.indexOf(b.toLocaleLowerCase()) === -1) {
+								return -1;
+							} else if (subset.indexOf(a.toLocaleLowerCase()) === -1 && subset.indexOf(b.toLocaleLowerCase()) !== -1) {
+								return 1;
+							} else {
+								return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+							}
+						});
 
 						// Remove current user from suggestions
-						if (app.username && results.indexOf(app.username) !== -1) {
-							results.splice(results.indexOf(app.username), 1);
+						if (app.username && usernames.indexOf(app.username) !== -1) {
+							usernames.splice(usernames.indexOf(app.username), 1);
 						}
 
-						callback(results);
+						callback(usernames);
 					});
 				},
 				index: 1,
 				replace: function (mention) {
 					return '@' + collapseSpaces(mention) + ' ';
 				},
-				cache: true
+				cache: false
 			}]);
 
 			element.attr('data-mentions', '1');
