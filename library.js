@@ -149,7 +149,6 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 		removeEphemeralGroups: true,
 		truncateUserList: true
 	}, function(err, groups) {
-		console.log(groups);
 		callback(null, groups.map(function(groupObj) {
 			return groupObj.name;
 		}));
