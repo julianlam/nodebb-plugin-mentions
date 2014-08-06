@@ -89,7 +89,7 @@ $(document).ready(function() {
 				replace: function (mention) {
 					return '@' + collapseSpaces(mention) + ' ';
 				},
-				cache: false
+				cache: true
 			}]);
 
 			element.attr('data-mentions', '1');
