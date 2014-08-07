@@ -28,6 +28,7 @@ Mentions.notify = function(postData) {
 		matches = cleanedContent.match(regex);
 
 	if (matches) {
+
 		// Eliminate duplicates
 		matches = matches.filter(function(cur, idx) {
 			return idx === matches.indexOf(cur);
@@ -35,8 +36,11 @@ Mentions.notify = function(postData) {
 
 		async.filter(matches, function(match, next) {
 			var	slug = Utils.slugify(match.slice(1));
-			Meta.userOrGroupExists(slug, function (err, exists) {
-				next(exists);
+			async.parallel([
+				async.apply(User.exists, slug),
+				async.apply(Groups.exists, match.slice(1))
+			], function(err, results) {
+				next(!err && results ? results[0] || results[1] : false);
 			});
 		}, function(matches) {
 			async.parallel({
@@ -50,15 +54,16 @@ Mentions.notify = function(postData) {
 					async.map(matches, function(match, next) {
 						var	slug = Utils.slugify(match.slice(1));
 
-						async.parallel({
-							groupName: async.apply(Groups.exists, slug),
-							uid: async.apply(User.getUidByUserslug, slug)
-						}, function(err, results) {
-							if (results.uid) {
-								next(null, results.uid);
-							} else if (results.groupName) {
-								next(null, slug);
+						User.getUidByUserslug(slug, function(err, uid) {
+							if (err) {
+								return next(err);
 							}
+
+							if (uid) {
+								return next(null, uid);
+							}
+
+							next(null, match.slice(1));
 						});
 					}, next);
 				},
