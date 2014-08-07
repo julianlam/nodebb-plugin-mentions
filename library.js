@@ -49,7 +49,7 @@ Mentions.notify = function(postData) {
 				ids: function(next) {
 					async.map(matches, function(match, next) {
 						var	slug = Utils.slugify(match.slice(1));
-						
+
 						async.parallel({
 							groupName: async.apply(Groups.exists, slug),
 							uid: async.apply(User.getUidByUserslug, slug)
@@ -68,7 +68,7 @@ Mentions.notify = function(postData) {
 			}, function(err, results) {
 				var	userRecipients = results.ids.filter(function(id) {
 						var	iid = parseInt(id, 10);
-						return !isNaN(iid) && iid !== postData.id;
+						return !isNaN(iid) && iid !== parseInt(postData.uid, 10);
 					}),
 					groupRecipients = results.ids.filter(function(id) {
 						return isNaN(parseInt(id, 10));
@@ -85,7 +85,7 @@ Mentions.notify = function(postData) {
 						importance: 6
 					}, function(err, nid) {
 						if (err) {
-							return; 
+							return;
 						}
 						if (userRecipients.length > 0) {
 							Notifications.push(nid, userRecipients);
