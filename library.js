@@ -154,6 +154,9 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 		removeEphemeralGroups: true,
 		truncateUserList: true
 	}, function(err, groups) {
+		if (err || !Array.isArray(groups)) {
+			return callback(null, []);
+		}
 		callback(null, groups.map(function(groupObj) {
 			return groupObj.name;
 		}));
