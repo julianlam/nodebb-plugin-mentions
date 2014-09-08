@@ -45,7 +45,7 @@ Mentions.notify = function(postData) {
 		}, function(matches) {
 			async.parallel({
 				topic: function(next) {
-					Topics.getTopicFields(postData.tid, ['title', 'slug'], next);
+					Topics.getTopicFields(postData.tid, ['title'], next);
 				},
 				author: function(next) {
 					User.getUserField(postData.uid, 'username', next);
@@ -66,9 +66,6 @@ Mentions.notify = function(postData) {
 							next(null, match.slice(1));
 						});
 					}, next);
-				},
-				index: function(next) {
-					Posts.getPidIndex(postData.pid, next);
 				}
 			}, function(err, results) {
 				var	userRecipients = results.ids.filter(function(id) {
@@ -83,7 +80,7 @@ Mentions.notify = function(postData) {
 					Notifications.create({
 						bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 						bodyLong: postData.content,
-						path: '/topic/' + results.topic.slug + (results.index ? '/' + results.index : '') + '?sort=oldest_to_newest',
+						pid: postData.pid,
 						uniqueId: 'topic:' + postData.tid + ':uid:' + postData.uid,
 						tid: postData.tid,
 						from: postData.uid,
