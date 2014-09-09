@@ -45,7 +45,7 @@ Mentions.notify = function(postData) {
 		}, function(matches) {
 			async.parallel({
 				topic: function(next) {
-					Topics.getTopicFields(postData.tid, ['title', 'slug'], next);
+					Topics.getTopicFields(postData.tid, ['title'], next);
 				},
 				author: function(next) {
 					User.getUserField(postData.uid, 'username', next);
@@ -66,9 +66,6 @@ Mentions.notify = function(postData) {
 							next(null, match.slice(1));
 						});
 					}, next);
-				},
-				index: function(next) {
-					Posts.getPidIndex(postData.pid, next);
 				}
 			}, function(err, results) {
 				var	userRecipients = results.ids.filter(function(id) {
@@ -83,21 +80,21 @@ Mentions.notify = function(postData) {
 					Notifications.create({
 						bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 						bodyLong: postData.content,
-						path: '/topic/' + results.topic.slug + (results.index ? '/' + results.index : '') + '?sort=oldest_to_newest',
-						uniqueId: 'topic:' + postData.tid + ':uid:' + postData.uid,
+						nid: 'topic:' + postData.tid + ':uid:' + postData.uid,
+						pid: postData.pid,
 						tid: postData.tid,
 						from: postData.uid,
 						importance: 6
-					}, function(err, nid) {
-						if (err) {
+					}, function(err, notification) {
+						if (err || !notification) {
 							return;
 						}
 						if (userRecipients.length > 0) {
-							Notifications.push(nid, userRecipients);
+							Notifications.push(notification, userRecipients);
 						}
 						if (groupRecipients.length > 0) {
 							async.each(groupRecipients, function(groupName, next) {
-								Notifications.pushGroup(nid, groupName, next);
+								Notifications.pushGroup(notification, groupName, next);
 							});
 						}
 					});
