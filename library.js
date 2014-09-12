@@ -80,7 +80,7 @@ Mentions.notify = function(postData) {
 					Notifications.create({
 						bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 						bodyLong: postData.content,
-						nid: 'topic:' + postData.tid + ':uid:' + postData.uid,
+						nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
 						pid: postData.pid,
 						tid: postData.tid,
 						from: postData.uid,
