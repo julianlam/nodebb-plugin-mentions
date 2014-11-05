@@ -104,42 +104,50 @@ Mentions.notify = function(postData) {
 	}
 };
 
-Mentions.addMentions = function(postContent, callback) {
-	var	_self = this,
-	relativeUrl = nconf.get('relative_url') || '',
-	matches = postContent.match(regex);
+Mentions.addMentions = function(data, callback) {
+	if (!data || !data.postData || !data.postData.content) {
+		return callback(null, data);
+	}
 
-	if (matches) {
-		// Eliminate duplicates
-		matches = matches.filter(function(cur, idx) {
-			return idx === matches.indexOf(cur);
-		});
+	var relativeUrl = nconf.get('relative_url') || '';
+	var matches = data.postData.content.match(regex);
 
-		async.each(matches, function(match, next) {
-			var slug = Utils.slugify(match.slice(1));
+	if (!matches) {
+		return callback(null, data);
+	}
+	// Eliminate duplicates
+	matches = matches.filter(function(cur, idx) {
+		return idx === matches.indexOf(cur);
+	});
 
-			match = removePunctuationSuffix(match);
+	async.each(matches, function(match, next) {
+		var slug = Utils.slugify(match.slice(1));
 
-			async.parallel({
-				groupName: async.apply(Groups.exists, slug),
-				uid: async.apply(User.getUidByUserslug, slug)
-			}, function(err, results) {
-				if (results.uid) {
-					if (isLatinMention.test(match)) {
-						postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
-					} else {
-						postContent = postContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
-					}
-				} else if (results.groupName) {
-					postContent = postContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
+		match = removePunctuationSuffix(match);
+
+		async.parallel({
+			groupName: async.apply(Groups.exists, slug),
+			uid: async.apply(User.getUidByUserslug, slug)
+		}, function(err, results) {
+			if (err) {
+				return next(err);
+			}
+
+			if (results.uid) {
+				if (isLatinMention.test(match)) {
+					data.postData.content = data.postData.content.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
+				} else {
+					data.postData.content = data.postData.content.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 				}
+			} else if (results.groupName) {
+				data.postData.content = data.postData.content.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
+			}
 
-				next();
-			});
-		}, function(err) {
-			callback(null, postContent);
+			next();
 		});
-	} else callback(null, postContent);
+	}, function(err) {
+		callback(err, data);
+	});
 };
 
 /*
