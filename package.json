@@ -22,7 +22,10 @@
     "url": "https://github.com/julianlam/nodebb-plugin-mentions/issues"
   },
   "dependencies": {
-    "async": "~0.2.9",
+    "async": "^0.2.10",
     "xregexp": "~2.0.0"
+  },
+  "nbbpm": {
+    "compatibility": "^0.5.1"
   }
 }
