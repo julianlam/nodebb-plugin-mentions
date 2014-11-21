@@ -24,7 +24,7 @@ SocketPlugins.mentions = {};
 
 Mentions.notify = function(postData) {
 	var	_self = this,
-		cleanedContent = postData.content.replace(/^>.*$/gm, ''),	// Removing blockquoted content from the checked string
+		cleanedContent = Mentions.clean(postData.content, true, true, true);
 		matches = cleanedContent.match(regex);
 
 	if (matches) {
@@ -109,8 +109,10 @@ Mentions.addMentions = function(data, callback) {
 		return callback(null, data);
 	}
 
-	var relativeUrl = nconf.get('relative_url') || '';
-	var matches = data.postData.content.match(regex);
+
+	var relativeUrl = nconf.get('relative_url') || '',
+		cleanedContent = Mentions.clean(data.postData.content, false, false, true),
+		matches = cleanedContent.match(regex);
 
 	if (!matches) {
 		return callback(null, data);
@@ -148,6 +150,20 @@ Mentions.addMentions = function(data, callback) {
 	}, function(err) {
 		callback(err, data);
 	});
+};
+
+Mentions.clean = function(input, isMarkdown, stripBlockquote, stripPreformatted) {
+	var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*<\/blockquote>/gm,
+		pfMatch = isMarkdown ? /`[^`\n]+`/gm : /^<p><code>.*<\/code><\/p>/gm;
+
+	if (stripBlockquote) {
+		input = input.replace(bqMatch, '');
+	}
+	if (stripPreformatted) {
+		input = input.replace(pfMatch, '');
+	}
+
+	return input;
 };
 
 /*
