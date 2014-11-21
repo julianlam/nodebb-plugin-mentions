@@ -105,14 +105,20 @@ Mentions.notify = function(postData) {
 };
 
 Mentions.addMentions = function(data, callback) {
-	if (!data || !data.postData || !data.postData.content) {
+	var relativeUrl = nconf.get('relative_url') || '',
+		originalContent, cleanedContent;
+
+	if (data && typeof data === 'string') {
+		originalContent = data;
+		cleanedContent = Mentions.clean(data, false, false, true);
+	} else if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
+	} else {
+		originalContent = data.postData.content;
+		cleanedContent = Mentions.clean(data.postData.content, false, false, true)
 	}
 
-
-	var relativeUrl = nconf.get('relative_url') || '',
-		cleanedContent = Mentions.clean(data.postData.content, false, false, true),
-		matches = cleanedContent.match(regex);
+	var matches = cleanedContent.match(regex);
 
 	if (!matches) {
 		return callback(null, data);
@@ -137,12 +143,18 @@ Mentions.addMentions = function(data, callback) {
 
 			if (results.uid) {
 				if (isLatinMention.test(match)) {
-					data.postData.content = data.postData.content.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
+					originalContent = originalContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 				} else {
-					data.postData.content = data.postData.content.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
+					originalContent = originalContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 				}
 			} else if (results.groupName) {
-				data.postData.content = data.postData.content.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
+				originalContent = originalContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
+			}
+
+			if (data && typeof data === 'string') {
+				data = originalContent;
+			} else {
+				data.postData.content = originalContent;
 			}
 
 			next();
@@ -152,14 +164,14 @@ Mentions.addMentions = function(data, callback) {
 	});
 };
 
-Mentions.clean = function(input, isMarkdown, stripBlockquote, stripPreformatted) {
+Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 	var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*<\/blockquote>/gm,
-		pfMatch = isMarkdown ? /`[^`\n]+`/gm : /^<p><code>.*<\/code><\/p>/gm;
+		pfMatch = isMarkdown ? /`[^`\n]+`/gm : /<code>.*<\/code>/gm;
 
 	if (stripBlockquote) {
 		input = input.replace(bqMatch, '');
 	}
-	if (stripPreformatted) {
+	if (stripCode) {
 		input = input.replace(pfMatch, '');
 	}
 

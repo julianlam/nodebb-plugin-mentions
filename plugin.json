@@ -6,6 +6,7 @@
 	"library": "./library.js",
 	"hooks": [
 		{ "hook": "filter:parse.post", "method": "addMentions" },
+		{ "hook": "filter:parse.raw", "method": "addMentions" },
 		{ "hook": "action:post.save", "method": "notify" }
 	],
 	"scripts": [
