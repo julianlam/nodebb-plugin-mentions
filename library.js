@@ -105,7 +105,7 @@ Mentions.notify = function(postData) {
 };
 
 Mentions.addMentions = function(data, callback) {
-	var relativeUrl = nconf.get('relative_url') || '',
+	var relativeUrl = nconf.get('relative_path') || '',
 		originalContent, cleanedContent;
 
 	if (data && typeof data === 'string') {
