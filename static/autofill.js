@@ -46,7 +46,7 @@ $(document).ready(function() {
 						return callback(usernames);
 					}
 
-					socket.emit('user.search', term, function(err, userdata) {
+					socket.emit('user.search', {query: term}, function(err, userdata) {
 						if (err) {
 							return callback([]);
 						}
