@@ -1,13 +1,13 @@
+'use strict';
+
 var	async = require('async'),
 	XRegExp = require('xregexp').XRegExp,
 
 	nconf = module.parent.require('nconf'),
 	Topics = module.parent.require('./topics'),
-	Posts = module.parent.require('./posts'),
 	User = module.parent.require('./user'),
 	Groups = module.parent.require('./groups'),
 	Notifications = module.parent.require('./notifications'),
-	Meta = module.parent.require('./meta'),
 	Utils = module.parent.require('../public/src/utils'),
 
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
@@ -23,86 +23,112 @@ var	async = require('async'),
 SocketPlugins.mentions = {};
 
 Mentions.notify = function(postData) {
-	var	_self = this,
-		cleanedContent = Mentions.clean(postData.content, true, true, true);
-		matches = cleanedContent.match(regex);
-
-	if (matches) {
-
-		// Eliminate duplicates
-		matches = matches.filter(function(cur, idx) {
-			return idx === matches.indexOf(cur);
-		});
-
+	function filter(matches, method, callback) {
 		async.filter(matches, function(match, next) {
-			var	slug = Utils.slugify(match.slice(1));
-			async.parallel([
-				async.apply(User.exists, slug),
-				async.apply(Groups.exists, match.slice(1))
-			], function(err, results) {
-				next(!err && results ? results[0] || results[1] : false);
+			method(match, function(err, exists) {
+				next(!err && exists);
 			});
 		}, function(matches) {
-			async.parallel({
-				topic: function(next) {
-					Topics.getTopicFields(postData.tid, ['title'], next);
-				},
-				author: function(next) {
-					User.getUserField(postData.uid, 'username', next);
-				},
-				ids: function(next) {
-					async.map(matches, function(match, next) {
-						var	slug = Utils.slugify(match.slice(1));
-
-						User.getUidByUserslug(slug, function(err, uid) {
-							if (err) {
-								return next(err);
-							}
-
-							if (uid) {
-								return next(null, uid);
-							}
-
-							next(null, match.slice(1));
-						});
-					}, next);
-				}
-			}, function(err, results) {
-				var	userRecipients = results.ids.filter(function(id) {
-						var	iid = parseInt(id, 10);
-						return !isNaN(iid) && iid !== parseInt(postData.uid, 10);
-					}),
-					groupRecipients = results.ids.filter(function(id) {
-						return isNaN(parseInt(id, 10));
-					});
-
-				if (!err && (userRecipients.length > 0 || groupRecipients.length > 0)) {
-					Notifications.create({
-						bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
-						bodyLong: postData.content,
-						nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
-						pid: postData.pid,
-						tid: postData.tid,
-						from: postData.uid,
-						importance: 6
-					}, function(err, notification) {
-						if (err || !notification) {
-							return;
-						}
-						if (userRecipients.length > 0) {
-							Notifications.push(notification, userRecipients);
-						}
-						if (groupRecipients.length > 0) {
-							async.each(groupRecipients, function(groupName, next) {
-								Notifications.pushGroup(notification, groupName, next);
-							});
-						}
-					});
-				}
-			});
+			callback(null, matches);
 		});
 	}
+
+	var	cleanedContent = Mentions.clean(postData.content, true, true, true);
+	var matches = cleanedContent.match(regex);
+
+	if (!matches) {
+		return;
+	}
+
+	var noMentionGroups = ['registered-users', 'guests'];
+
+	matches = matches.map(function(match) {
+		return Utils.slugify(match.slice(1));
+	}).filter(function(match, index, array) {
+		return match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1;
+	});
+
+	async.parallel({
+		userRecipients: function(next) {
+			filter(matches, User.exists, next);
+		},
+		groupRecipients: function(next) {
+			filter(matches, Groups.exists, next);
+		}
+	}, function(err, results) {
+		if (err) {
+			return;
+		}
+
+		async.parallel({
+			topic: function(next) {
+				Topics.getTopicFields(postData.tid, ['title'], next);
+			},
+			author: function(next) {
+				User.getUserField(postData.uid, 'username', next);
+			},
+			uids: function(next) {
+				async.map(results.userRecipients, function(slug, next) {
+					User.getUidByUserslug(slug, next);
+				}, next);
+			},
+			groupsMembers: function(next) {
+				getGroupMemberUids(results.groupRecipients, next);
+			}
+		}, function(err, results) {
+			if (err) {
+				return;
+			}
+
+			var uids = results.uids.concat(results.groupsMembers).filter(function(uid, index, array) {
+				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10);
+			});
+
+			if (uids.length > 0) {
+				Notifications.create({
+					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
+					bodyLong: postData.content,
+					nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
+					pid: postData.pid,
+					tid: postData.tid,
+					from: postData.uid,
+					importance: 6
+				}, function(err, notification) {
+					if (err || !notification) {
+						return;
+					}
+					Notifications.push(notification, results.uids);
+				});
+			}
+		});
+	});
 };
+
+function getGroupMemberUids(groupRecipients, callback) {
+	async.map(groupRecipients, function(slug, next) {
+		Groups.getGroupNameByGroupSlug(slug, next);
+	}, function(err, groups) {
+		if (err) {
+			return callback(err);
+		}
+		async.map(groups, function(group, next) {
+			Groups.getMembers(group, next);
+		}, function(err, results) {
+			if (err) {
+				return callback(err);
+			}
+
+			var uids = [];
+			results.forEach(function(members) {
+				uids = uids.concat(members);
+			});
+			uids = uids.filter(function(uid, index, array) {
+				return parseInt(uid, 10) && array.indexOf(uid) === index;
+			});
+			callback(null, uids);
+		});
+	});
+}
 
 Mentions.addMentions = function(data, callback) {
 	var relativeUrl = nconf.get('relative_path') || '',
@@ -115,7 +141,7 @@ Mentions.addMentions = function(data, callback) {
 		return callback(null, data);
 	} else {
 		originalContent = data.postData.content;
-		cleanedContent = Mentions.clean(data.postData.content, false, false, true)
+		cleanedContent = Mentions.clean(data.postData.content, false, false, true);
 	}
 
 	var matches = cleanedContent.match(regex);
