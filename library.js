@@ -33,7 +33,7 @@ Mentions.notify = function(postData) {
 		});
 	}
 
-	var	cleanedContent = Mentions.clean(postData.content, true, true, true);
+	var cleanedContent = Mentions.clean(postData.content, true, true, true);
 	var matches = cleanedContent.match(regex);
 
 	if (!matches) {
