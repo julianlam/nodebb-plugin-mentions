@@ -112,7 +112,7 @@ function getGroupMemberUids(groupRecipients, callback) {
 			return callback(err);
 		}
 		async.map(groups, function(group, next) {
-			Groups.getMembers(group, next);
+			Groups.getMembers(group, 0, -1, next);
 		}, function(err, results) {
 			if (err) {
 				return callback(err);
