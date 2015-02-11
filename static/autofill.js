@@ -39,7 +39,7 @@ $(document).ready(function() {
 					var usernames;
 					if (!term) {
 						usernames = localUserList.concat(Mentions.groups).filter(function(value, index, array) {
-							return array.indexOf(value) === index && value !== app.username;
+							return array.indexOf(value) === index && value !== app.user.username;
 						}).sort(function(a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
 						})
@@ -78,8 +78,8 @@ $(document).ready(function() {
 						});
 
 						// Remove current user from suggestions
-						if (app.username && usernames.indexOf(app.username) !== -1) {
-							usernames.splice(usernames.indexOf(app.username), 1);
+						if (app.user.username && usernames.indexOf(app.user.username) !== -1) {
+							usernames.splice(usernames.indexOf(app.user.username), 1);
 						}
 
 						callback(usernames);
