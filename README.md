@@ -1,12 +1,14 @@
-# Username Mentions
+# Username/Group Mentions
 
-This NodeBB plugin allows posters to reference (or *mention*) other users on a NodeBB by simply
+This NodeBB plugin allows posters to reference (or *mention*) other users or groups on a NodeBB by simply
 precluding the `@` symbol before a username.
 
 A link is automatically added to the post.
 
 ## Installation
 
-    npm install nodebb-plugin-mentions
+This plugin is bundled with every NodeBB install. If not, you can install it via the Plugins page of the ACP.
 
-... or if you're feeling particularly risky, clone this repo and use `npm link` to "install" this plugin.
+Alternatively,
+
+    npm install nodebb-plugin-mentions
