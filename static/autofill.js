@@ -1,52 +1,28 @@
-$(document).ready(function() {
-	socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
-		Mentions.groups = groupNames;
-	});
+"use strict";
+/* globals socket, app, utils */
 
-	$(window).on('action:composer.loaded', function(e, data) {
-		var composer = $('#cmp-uuid-' + data.post_uuid + ' .write'),
-			DOMusers = [];
-
-		// Retrieve DOM users
-		$('.posts [data-pid] .username-field').each(function(idx, el) {
-			var	username = el.getAttribute('data-username');
-			if (DOMusers.indexOf(username) === -1) {
-				DOMusers.push(username);
-			}
-		});
-
-		Mentions.addAutofill(composer, DOMusers);
-		$('.textcomplete-wrapper').css('height', '100%').find('textarea').css('height', '100%');
-	});
-});
 
 (function(window) {
 	window.Mentions = {
 		groups: null,
 		addAutofill: function(element, localUserList) {
-			var subset,
-				collapseSpaces = function(username) {
-					if (typeof username !== 'string') {
-						username = username.toString();
-					}
-
-					return username.replace(/\s/g, '-');
-				};
+			var subset;
 
 			element.textcomplete([{
 				match: /\B@([^\s\n]*)?$/,
 				search: function (term, callback) {
 					var usernames;
 					if (!term) {
-						usernames = localUserList.concat(Mentions.groups).filter(function(value, index, array) {
+						usernames = localUserList.concat(window.Mentions.groups).filter(function(value, index, array) {
 							return array.indexOf(value) === index && value !== app.user.username;
 						}).sort(function(a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-						})
+						});
 						return callback(usernames);
 					}
 
 					socket.emit('user.search', {query: term}, function(err, userdata) {
+						console.log(userdata);
 						if (err) {
 							return callback([]);
 						}
@@ -55,7 +31,7 @@ $(document).ready(function() {
 							return user.username;
 						});
 
-						subset = localUserList.concat(Mentions.groups).filter(function(username) {
+						subset = localUserList.concat(window.Mentions.groups).filter(function(username) {
 							return username.toLocaleLowerCase().indexOf(term.toLocaleLowerCase()) !== -1;
 						});
 
@@ -87,7 +63,7 @@ $(document).ready(function() {
 				},
 				index: 1,
 				replace: function (mention) {
-					return '@' + collapseSpaces(mention) + ' ';
+					return '@' + utils.slugify(mention, true) + ' ';
 				},
 				cache: true
 			}]);
@@ -95,4 +71,26 @@ $(document).ready(function() {
 			element.attr('data-mentions', '1');
 		}
 	};
+
+	$(document).ready(function() {
+		socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
+			window.Mentions.groups = groupNames;
+		});
+
+		$(window).on('action:composer.loaded', function(e, data) {
+			var composer = $('#cmp-uuid-' + data.post_uuid + ' .write'),
+				DOMusers = [];
+
+			// Retrieve DOM users
+			$('.posts [data-pid] .username-field').each(function(idx, el) {
+				var	username = el.getAttribute('data-username');
+				if (DOMusers.indexOf(username) === -1) {
+					DOMusers.push(username);
+				}
+			});
+
+			window.Mentions.addAutofill(composer, DOMusers);
+			$('.textcomplete-wrapper').css('height', '100%').find('textarea').css('height', '100%');
+		});
+	});
 })(window);

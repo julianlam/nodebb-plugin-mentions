@@ -211,7 +211,8 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 	Groups.list({
 		removeEphemeralGroups: true,
-		truncateUserList: true
+		truncateUserList: true,
+		unescape: true
 	}, function(err, groups) {
 		if (err || !Array.isArray(groups)) {
 			return callback(null, []);
