@@ -167,14 +167,14 @@ Mentions.addMentions = function(data, callback) {
 				return next(err);
 			}
 
+			var regex = isLatinMention.test(match)
+				? new RegExp(match + '\\b', 'g')
+				: new RegExp(match, 'g');
+
 			if (results.uid) {
-				if (isLatinMention.test(match)) {
-					originalContent = originalContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
-				} else {
-					originalContent = originalContent.replace(new RegExp(match, 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
-				}
+				originalContent = originalContent.replace(regex, '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
 			} else if (results.groupName) {
-				originalContent = originalContent.replace(new RegExp(match + '\\b', 'g'), '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
+				originalContent = originalContent.replace(regex, '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
 			}
 
 			if (data && typeof data === 'string') {
