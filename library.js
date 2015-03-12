@@ -131,18 +131,13 @@ function getGroupMemberUids(groupRecipients, callback) {
 }
 
 Mentions.addMentions = function(data, callback) {
-	var relativeUrl = nconf.get('relative_path') || '',
-		originalContent, cleanedContent;
+	var relativeUrl = nconf.get('relative_path') || '';
 
-	if (data && typeof data === 'string') {
-		originalContent = data;
-		cleanedContent = Mentions.clean(data, false, false, true);
-	} else if (!data || !data.postData || !data.postData.content) {
+	if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
-	} else {
-		originalContent = data.postData.content;
-		cleanedContent = Mentions.clean(data.postData.content, false, false, true);
-	}
+	} 
+	
+	var cleanedContent = Mentions.clean(data.postData.content, false, false, true);
 
 	var matches = cleanedContent.match(regex);
 
@@ -160,29 +155,25 @@ Mentions.addMentions = function(data, callback) {
 		match = removePunctuationSuffix(match);
 
 		async.parallel({
-			groupName: async.apply(Groups.exists, slug),
+			groupExists: async.apply(Groups.exists, slug),
 			uid: async.apply(User.getUidByUserslug, slug)
 		}, function(err, results) {
 			if (err) {
 				return next(err);
 			}
-
-			var regex = isLatinMention.test(match)
-				? new RegExp(match + '\\b', 'g')
-				: new RegExp(match, 'g');
-
-			if (results.uid) {
-				originalContent = originalContent.replace(regex, '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>');
-			} else if (results.groupName) {
-				originalContent = originalContent.replace(regex, '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>');
+			
+			if (results.uid || results.groupExists) {
+				var regex = isLatinMention.test(match)
+					? new RegExp(match + '\\b', 'g')
+					: new RegExp(match, 'g');
+				
+				var str = results.uid 
+					? '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>' 
+					: '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>';
+				
+				data.postData.content = data.postData.content.replace(regex, str);
 			}
-
-			if (data && typeof data === 'string') {
-				data = originalContent;
-			} else {
-				data.postData.content = originalContent;
-			}
-
+		
 			next();
 		});
 	}, function(err) {
