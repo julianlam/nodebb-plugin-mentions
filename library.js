@@ -155,7 +155,7 @@ Mentions.addMentions = function(data, callback) {
 		match = removePunctuationSuffix(match);
 
 		async.parallel({
-			groupExists: async.apply(Groups.exists, slug),
+			groupExists: async.apply(Groups.existsBySlug, slug),
 			uid: async.apply(User.getUidByUserslug, slug)
 		}, function(err, results) {
 			if (err) {
