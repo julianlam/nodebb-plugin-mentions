@@ -182,13 +182,12 @@ Mentions.addMentions = function(data, callback) {
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
-	var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*<\/blockquote>/gm,
-		pfMatch = isMarkdown ? /`[^`\n]+`/gm : /<code>.*<\/code>/gm;
-
 	if (stripBlockquote) {
+		var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*<\/blockquote>/gm;
 		input = input.replace(bqMatch, '');
 	}
 	if (stripCode) {
+		var pfMatch = isMarkdown ? /`[^`\n]+`/gm : /<code>.*<\/code>/gm;
 		input = input.replace(pfMatch, '');
 	}
 
