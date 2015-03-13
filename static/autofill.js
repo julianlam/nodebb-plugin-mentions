@@ -22,7 +22,6 @@
 					}
 
 					socket.emit('user.search', {query: term}, function(err, userdata) {
-						console.log(userdata);
 						if (err) {
 							return callback([]);
 						}
