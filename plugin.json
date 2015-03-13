@@ -10,7 +10,6 @@
 		{ "hook": "action:post.save", "method": "notify" }
 	],
 	"scripts": [
-		"static/jquery.textcomplete.js",
 		"static/autofill.js"
 	],
 	"less": [
