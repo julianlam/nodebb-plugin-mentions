@@ -26,6 +26,6 @@
     "xregexp": "~2.0.0"
   },
   "nbbpm": {
-    "compatibility": "^0.6.1"
+    "compatibility": "^0.7.0"
   }
 }
