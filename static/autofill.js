@@ -65,7 +65,7 @@
 					return '@' + utils.slugify(mention, true) + ' ';
 				},
 				cache: true
-			}]);
+			}], {zIndex: 20000, placement: "abs|bottom"});
 
 			element.attr('data-mentions', '1');
 		}
