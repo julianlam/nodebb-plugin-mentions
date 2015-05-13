@@ -135,8 +135,8 @@ Mentions.addMentions = function(data, callback) {
 
 	if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
-	} 
-	
+	}
+
 	var cleanedContent = Mentions.clean(data.postData.content, false, false, true);
 
 	var matches = cleanedContent.match(regex);
@@ -161,19 +161,19 @@ Mentions.addMentions = function(data, callback) {
 			if (err) {
 				return next(err);
 			}
-			
+
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp(match + '\\b', 'g')
 					: new RegExp(match, 'g');
-				
-				var str = results.uid 
-					? '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>' 
+
+				var str = results.uid
+					? '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>'
 					: '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>';
-				
+
 				data.postData.content = data.postData.content.replace(regex, str);
 			}
-		
+
 			next();
 		});
 	}, function(err) {
@@ -199,17 +199,14 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 */
 
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
-	Groups.list({
-		removeEphemeralGroups: true,
-		truncateUserList: true,
-		unescape: true
-	}, function(err, groups) {
-		if (err || !Array.isArray(groups)) {
-			return callback(null, []);
+	Groups.getGroups(0, -1, function(err, groups) {
+		if (err) {
+			return callback(err);
 		}
-		callback(null, groups.map(function(groupObj) {
-			return groupObj.name;
-		}));
+		groups = groups.filter(function(group) {
+			return group && group.indexOf(':privileges:') === -1 && group !== 'registered-users' && group !== 'guests' && group !== 'administrators';
+		});
+		callback(null, groups);
 	});
 };
 
