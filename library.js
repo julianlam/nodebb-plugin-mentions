@@ -199,17 +199,14 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 */
 
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
-	Groups.list({
-		removeEphemeralGroups: true,
-		truncateUserList: true,
-		unescape: true
-	}, function(err, groups) {
-		if (err || !Array.isArray(groups)) {
-			return callback(null, []);
+	Groups.getGroups(0, -1, function(err, groups) {
+		if (err) {
+			return callback(err);
 		}
-		callback(null, groups.map(function(groupObj) {
-			return groupObj.name;
-		}));
+		groups = groups.filter(function(groupName) {
+			return groupName && groupName.indexOf(':privileges:') === -1 && groupName !== 'registered-users' && groupName !== 'guests';
+		});
+		callback(null, groups);
 	});
 };
 
