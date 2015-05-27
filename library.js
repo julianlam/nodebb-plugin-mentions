@@ -1,6 +1,6 @@
 'use strict';
 
-var	async = require('async'),
+var	async = module.parent.require('async'),
 	XRegExp = require('xregexp').XRegExp,
 
 	nconf = module.parent.require('nconf'),
