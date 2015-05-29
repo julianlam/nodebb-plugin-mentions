@@ -21,9 +21,6 @@
   "bugs": {
     "url": "https://github.com/julianlam/nodebb-plugin-mentions/issues"
   },
-  "dependencies": {
-    "xregexp": "~2.0.0"
-  },
   "nbbpm": {
     "compatibility": "^0.7.0"
   }
