@@ -131,8 +131,6 @@ function getGroupMemberUids(groupRecipients, callback) {
 }
 
 Mentions.addMentions = function(data, callback) {
-	var relativeUrl = nconf.get('relative_path') || '';
-
 	if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
 	} 
@@ -168,8 +166,8 @@ Mentions.addMentions = function(data, callback) {
 					: new RegExp(match, 'g');
 				
 				var str = results.uid 
-					? '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>' 
-					: '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>';
+					? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>' 
+					: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 				
 				data.postData.content = data.postData.content.replace(regex, str);
 			}
