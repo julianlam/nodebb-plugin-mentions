@@ -8,6 +8,7 @@ var	async = module.parent.require('async'),
 	User = module.parent.require('./user'),
 	Groups = module.parent.require('./groups'),
 	Notifications = module.parent.require('./notifications'),
+	Privileges = module.parent.require('./privileges'),
 	Utils = module.parent.require('../public/src/utils'),
 
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
@@ -62,7 +63,7 @@ Mentions.notify = function(postData) {
 
 		async.parallel({
 			topic: function(next) {
-				Topics.getTopicFields(postData.tid, ['title'], next);
+				Topics.getTopicFields(postData.tid, ['title', 'cid'], next);
 			},
 			author: function(next) {
 				User.getUserField(postData.uid, 'username', next);
@@ -84,7 +85,17 @@ Mentions.notify = function(postData) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10);
 			});
 
-			if (uids.length > 0) {
+			if (!uids.length) {
+				return;
+			}
+			
+			Privileges.categories.filterUids('read', results.topic.cid, uids, function(err, uids) {
+				if (err) {
+					return;
+				}	
+				if (!uids.length) {
+					return;
+				}
 				Notifications.create({
 					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 					bodyLong: postData.content,
@@ -97,9 +108,9 @@ Mentions.notify = function(postData) {
 					if (err || !notification) {
 						return;
 					}
-					Notifications.push(notification, results.uids);
+					Notifications.push(notification, uids);
 				});
-			}
+			});
 		});
 	});
 };
