@@ -1,13 +1,14 @@
 'use strict';
 
-var	async = require('async'),
-	XRegExp = require('xregexp').XRegExp,
+var	async = module.parent.require('async'),
+	XRegExp = module.parent.require('xregexp').XRegExp,
 
 	nconf = module.parent.require('nconf'),
 	Topics = module.parent.require('./topics'),
 	User = module.parent.require('./user'),
 	Groups = module.parent.require('./groups'),
 	Notifications = module.parent.require('./notifications'),
+	Privileges = module.parent.require('./privileges'),
 	Utils = module.parent.require('../public/src/utils'),
 
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
@@ -62,7 +63,7 @@ Mentions.notify = function(postData) {
 
 		async.parallel({
 			topic: function(next) {
-				Topics.getTopicFields(postData.tid, ['title'], next);
+				Topics.getTopicFields(postData.tid, ['title', 'cid'], next);
 			},
 			author: function(next) {
 				User.getUserField(postData.uid, 'username', next);
@@ -84,7 +85,17 @@ Mentions.notify = function(postData) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10);
 			});
 
-			if (uids.length > 0) {
+			if (!uids.length) {
+				return;
+			}
+
+			Privileges.categories.filterUids('read', results.topic.cid, uids, function(err, uids) {
+				if (err) {
+					return;
+				}
+				if (!uids.length) {
+					return;
+				}
 				Notifications.create({
 					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 					bodyLong: postData.content,
@@ -97,9 +108,9 @@ Mentions.notify = function(postData) {
 					if (err || !notification) {
 						return;
 					}
-					Notifications.push(notification, results.uids);
+					Notifications.push(notification, uids);
 				});
-			}
+			});
 		});
 	});
 };
@@ -131,8 +142,6 @@ function getGroupMemberUids(groupRecipients, callback) {
 }
 
 Mentions.addMentions = function(data, callback) {
-	var relativeUrl = nconf.get('relative_path') || '';
-
 	if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
 	}
@@ -168,8 +177,8 @@ Mentions.addMentions = function(data, callback) {
 					: new RegExp(match, 'g');
 
 				var str = results.uid
-					? '<a class="plugin-mentions-a" href="' + relativeUrl + '/user/' + slug + '">' + match + '</a>'
-					: '<a class="plugin-mentions-a" href="' + relativeUrl + '/groups/' + slug + '">' + match + '</a>';
+					? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>'
+					: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 				data.postData.content = data.postData.content.replace(regex, str);
 			}
@@ -203,8 +212,9 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 		if (err) {
 			return callback(err);
 		}
-		groups = groups.filter(function(group) {
-			return group && group.indexOf(':privileges:') === -1 && group !== 'registered-users' && group !== 'guests' && group !== 'administrators';
+
+		groups = groups.filter(function(groupName) {
+			return groupName && groupName.indexOf(':privileges:') === -1 && groupName !== 'registered-users' && groupName !== 'guests';
 		});
 		callback(null, groups);
 	});
