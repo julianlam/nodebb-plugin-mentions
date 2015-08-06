@@ -2,6 +2,7 @@
 
 var	async = module.parent.require('async'),
 	XRegExp = module.parent.require('xregexp').XRegExp,
+	validator = module.parent.require('validator'),
 
 	nconf = module.parent.require('nconf'),
 	Topics = module.parent.require('./topics'),
@@ -218,13 +219,12 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 */
 
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
-	Groups.getGroups(0, -1, function(err, groups) {
+	Groups.getGroups('groups:visible:createtime', 0, -1, function(err, groups) {
 		if (err) {
 			return callback(err);
 		}
-
-		groups = groups.filter(function(groupName) {
-			return groupName && groupName.indexOf(':privileges:') === -1 && groupName !== 'registered-users' && groupName !== 'guests';
+		groups = groups.filter(Boolean).map(function(groupName) {
+			return validator.escape(groupName);
 		});
 		callback(null, groups);
 	});
