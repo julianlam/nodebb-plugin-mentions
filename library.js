@@ -88,14 +88,12 @@ Mentions.notify = function(postData) {
 			if (!uids.length) {
 				return;
 			}
-			
+
 			Privileges.categories.filterUids('read', results.topic.cid, uids, function(err, uids) {
-				if (err) {
-					return;
-				}	
-				if (!uids.length) {
+				if (err || !uids.length) {
 					return;
 				}
+
 				Notifications.create({
 					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
 					bodyLong: postData.content,
@@ -141,18 +139,30 @@ function getGroupMemberUids(groupRecipients, callback) {
 	});
 }
 
-Mentions.addMentions = function(data, callback) {
+Mentions.parsePost = function(data, callback) {
 	if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
-	} 
-	
-	var cleanedContent = Mentions.clean(data.postData.content, false, false, true);
+	}
+
+	Mentions.parseRaw(data.postData.content, function(err, content) {
+		if (err) {
+			return callback(err);
+		}
+
+		data.postData.content = content;
+		callback(null, data);
+	});
+};
+
+Mentions.parseRaw = function(content, callback) {
+	var cleanedContent = Mentions.clean(content, false, false, true);
 
 	var matches = cleanedContent.match(regex);
 
 	if (!matches) {
-		return callback(null, data);
+		return callback(null, content);
 	}
+
 	// Eliminate duplicates
 	matches = matches.filter(function(cur, idx) {
 		return idx === matches.indexOf(cur);
@@ -170,23 +180,23 @@ Mentions.addMentions = function(data, callback) {
 			if (err) {
 				return next(err);
 			}
-			
+
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp(match + '\\b', 'g')
 					: new RegExp(match, 'g');
-				
-				var str = results.uid 
-					? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>' 
+
+				var str = results.uid
+					? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>'
 					: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
-				
-				data.postData.content = data.postData.content.replace(regex, str);
+
+				content = content.replace(regex, str);
 			}
-		
+
 			next();
 		});
 	}, function(err) {
-		callback(err, data);
+		callback(err, content);
 	});
 };
 
@@ -212,6 +222,7 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 		if (err) {
 			return callback(err);
 		}
+
 		groups = groups.filter(function(groupName) {
 			return groupName && groupName.indexOf(':privileges:') === -1 && groupName !== 'registered-users' && groupName !== 'guests';
 		});
