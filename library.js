@@ -202,6 +202,9 @@ Mentions.parseRaw = function(content, callback) {
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
+	if (!input) {
+		return input;
+	}
 	if (stripBlockquote) {
 		var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*<\/blockquote>/gm;
 		input = input.replace(bqMatch, '');
