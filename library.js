@@ -127,7 +127,7 @@ Mentions.notify = function(postData) {
 					if (err || !notification) {
 						return;
 					}
-					Notifications.push(notification, uids);
+					Notifications.push(notification, filteredUids);
 				});
 			});
 		});
