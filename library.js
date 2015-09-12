@@ -50,6 +50,10 @@ Mentions.notify = function(postData) {
 		return match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1;
 	});
 
+	if (!matches.length) {
+		return;
+	}
+
 	async.parallel({
 		userRecipients: function(next) {
 			filter(matches, User.exists, next);
@@ -59,6 +63,10 @@ Mentions.notify = function(postData) {
 		}
 	}, function(err, results) {
 		if (err) {
+			return;
+		}
+
+		if (!results.userRecipients.length && !results.groupRecipients.length) {
 			return;
 		}
 
@@ -76,6 +84,9 @@ Mentions.notify = function(postData) {
 			},
 			groupsMembers: function(next) {
 				getGroupMemberUids(results.groupRecipients, next);
+			},
+			topicFollowers: function(next) {
+				Topics.getFollowers(postData.tid, next);
 			}
 		}, function(err, results) {
 			if (err) {
@@ -83,7 +94,7 @@ Mentions.notify = function(postData) {
 			}
 
 			var uids = results.uids.concat(results.groupsMembers).filter(function(uid, index, array) {
-				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10);
+				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
 			});
 
 			if (!uids.length) {
