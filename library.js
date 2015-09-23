@@ -14,7 +14,7 @@ var	async = module.parent.require('async'),
 
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
 
-	regex = XRegExp('(@[\\p{L}\\d\\-_.]+)', 'g'),
+	regex = XRegExp('([>|\\s]@[\\p{L}\\d\\-_.]+)', 'g'),
 	isLatinMention = /@[\w\d\-_.]+$/,
 	removePunctuationSuffix = function(string) {
 		return string.replace(/[!?.]*$/, '');
@@ -167,17 +167,25 @@ Mentions.parsePost = function(data, callback) {
 };
 
 Mentions.parseRaw = function(content, callback) {
-	var cleanedContent = Mentions.clean(content, false, false, true);
-
-	var matches = cleanedContent.match(regex);
+	var cleanedContent = Mentions.clean(content, false, false, true),
+		matches = cleanedContent.match(regex),
+		atIndex;
 
 	if (!matches) {
 		return callback(null, content);
 	}
 
-	// Eliminate duplicates
 	matches = matches.filter(function(cur, idx) {
+		// Eliminate duplicates
 		return idx === matches.indexOf(cur);
+	}).map(function(match) {
+		/**
+		 *	Javascript-favour of regex does not support lookaround,
+		 *	so need to clean up the cruft by discarding everthing
+		 *	before the @
+		 */
+		atIndex = match.indexOf('@');
+		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
 	async.each(matches, function(match, next) {
@@ -195,14 +203,21 @@ Mentions.parseRaw = function(content, callback) {
 
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
-					? new RegExp(match + '\\b', 'g')
-					: new RegExp(match, 'g');
+					? new RegExp('[>|\\s]' + match + '\\b', 'g')
+					: new RegExp('[>|\\s]' + match, 'g'),
+					str;
 
-				var str = results.uid
-					? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>'
-					: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+				content = content.replace(regex, function(match) {
+					// Again, cleaning up lookaround leftover bits
+					var atIndex = match.indexOf('@'),
+						plain = match.slice(0, atIndex),
+						match = match.slice(atIndex),
+						str = results.uid
+							? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>'
+							: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
-				content = content.replace(regex, str);
+					return plain + str;
+				});
 			}
 
 			next();
