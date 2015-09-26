@@ -60,7 +60,7 @@ Mentions.notify = function(postData) {
 			filter(matches, User.exists, next);
 		},
 		groupRecipients: function(next) {
-			filter(matches, Groups.exists, next);
+			filter(matches, Groups.existsBySlug, next);
 		}
 	}, function(err, results) {
 		if (err) {
