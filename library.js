@@ -57,7 +57,7 @@ Mentions.notify = function(postData) {
 
 	async.parallel({
 		userRecipients: function(next) {
-			filter(matches, User.exists, next);
+			filter(matches, User.existsBySlug, next);
 		},
 		groupRecipients: function(next) {
 			filter(matches, Groups.existsBySlug, next);
