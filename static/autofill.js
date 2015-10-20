@@ -71,12 +71,8 @@
 		}
 	};
 
-	$(document).ready(function() {
-		socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
-			window.Mentions.groups = groupNames;
-		});
-
-		$(window).on('action:composer.loaded', function(e, data) {
+	$(window).on('action:composer.loaded', function(e, data) {
+		function onComposerLoaded() {
 			var composer = $('#cmp-uuid-' + data.post_uuid + ' .write'),
 				DOMusers = [];
 
@@ -90,6 +86,23 @@
 
 			window.Mentions.addAutofill(composer, DOMusers);
 			$('.textcomplete-wrapper').css('height', '100%').find('textarea').css('height', '100%');
-		});
+		}
+
+		if (!window.Mentions.groups) {
+			return loadGroupList(onComposerLoaded);
+		}
+
+		onComposerLoaded();
 	});
+
+	function loadGroupList(callback) {
+		socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
+			if (err) {
+				return app.alertError(err.message);
+			}
+			window.Mentions.groups = groupNames;
+			callback();
+		});
+	}
+
 })(window);
