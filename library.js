@@ -15,7 +15,7 @@ var	async = module.parent.require('async'),
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
 
 	regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g'),	// used in post text transform, accounts for HTML
-	rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)'),	// used in notifications, as raw text is passed in this hook
+	rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g'),	// used in notifications, as raw text is passed in this hook
 	isLatinMention = /@[\w\d\-_.]+$/,
 	removePunctuationSuffix = function(string) {
 		return string.replace(/[!?.]*$/, '');
@@ -46,7 +46,7 @@ Mentions.notify = function(postData) {
 	var noMentionGroups = ['registered-users', 'guests'];
 
 	matches = matches.map(function(match) {
-		return Utils.slugify(match.slice(1));
+		return Utils.slugify(match);
 	}).filter(function(match, index, array) {
 		return match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1;
 	});
