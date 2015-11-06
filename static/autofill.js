@@ -65,7 +65,14 @@
 					return '@' + utils.slugify(mention, true) + ' ';
 				},
 				cache: true
-			}], {zIndex: 20000, placement: "abs|bottom"});
+			}], {
+				zIndex: 20000,
+				listPosition: function(position) {
+					this.$el.css(this._applyPlacement(position));
+					this.$el.css('position', 'absolute');
+					return this;
+				}
+			});
 
 			element.attr('data-mentions', '1');
 		}
