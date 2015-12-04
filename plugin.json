@@ -15,5 +15,5 @@
 	"less": [
 		"static/style.less"
 	],
-	"minver": "0.5.1"
+	"languages": "languages"
 }
