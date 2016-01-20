@@ -92,13 +92,12 @@ $(document).ready(function() {
 		return DOMusers;
 	}
 
-	function loadGroupList(callback) {
+	function loadGroupList() {
 		socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
 			if (err) {
 				return app.alertError(err.message);
 			}
 			groupList = groupNames;
-			callback();
 		});
 	}
 
