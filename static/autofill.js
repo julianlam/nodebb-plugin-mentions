@@ -68,6 +68,7 @@ $(document).ready(function() {
 			},
 			index: 1,
 			replace: function (mention) {
+				mention = $('<div/>').html(mention).text();
 				return '@' + utils.slugify(mention, true) + ' ';
 			},
 			cache: true
