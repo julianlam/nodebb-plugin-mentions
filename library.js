@@ -1,7 +1,7 @@
 'use strict';
 
 var	async = module.parent.require('async'),
-	XRegExp = module.parent.require('xregexp').XRegExp,
+	XRegExp = module.parent.require('xregexp'),
 	validator = module.parent.require('validator'),
 
 	nconf = module.parent.require('nconf'),
