@@ -102,7 +102,7 @@ Mentions.notify = function(postData) {
 				return;
 			}
 
-			Privileges.categories.filterUids('read', results.topic.cid, uids, function(err, uids) {
+			Privileges.topics.filterUids('read', results.topic.cid, uids, function(err, uids) {
 				if (err || !uids.length) {
 					return;
 				}
