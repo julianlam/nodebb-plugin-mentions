@@ -102,7 +102,7 @@ Mentions.notify = function(postData) {
 				return;
 			}
 
-			Privileges.topics.filterUids('read', results.topic.cid, uids, function(err, uids) {
+			Privileges.topics.filterUids('read', postData.tid, uids, function(err, uids) {
 				if (err || !uids.length) {
 					return;
 				}
@@ -205,15 +205,14 @@ Mentions.parseRaw = function(content, callback) {
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp('[>|\\s]' + match + '\\b', 'g')
-					: new RegExp('[>|\\s]' + match, 'g'),
-					str;
+					: new RegExp('[>|\\s]' + match, 'g');
 
 				content = content.replace(regex, function(match) {
 					// Again, cleaning up lookaround leftover bits
-					var atIndex = match.indexOf('@'),
-						plain = match.slice(0, atIndex),
-						match = match.slice(atIndex),
-						str = results.uid
+					var atIndex = match.indexOf('@');
+					var plain = match.slice(0, atIndex);
+					match = match.slice(atIndex);
+					var str = results.uid
 							? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>'
 							: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
