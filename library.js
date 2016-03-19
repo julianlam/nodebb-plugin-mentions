@@ -168,9 +168,12 @@ Mentions.parsePost = function(data, callback) {
 };
 
 Mentions.parseRaw = function(content, callback) {
-	var cleanedContent = Mentions.clean(content, false, false, true),
-		matches = cleanedContent.match(regex),
-		atIndex;
+	var cleanedContent = Mentions.clean(content, false, false, true);
+	if (!cleanedContent) {
+		return callback(null, content);
+	}
+	var matches = cleanedContent.match(regex);
+	var atIndex;
 
 	if (!matches) {
 		return callback(null, content);
