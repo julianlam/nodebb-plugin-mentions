@@ -1,6 +1,7 @@
 'use strict';
 
 var	async = module.parent.require('async'),
+	S = module.parent.require('string'),
 	XRegExp = module.parent.require('xregexp'),
 	validator = module.parent.require('validator'),
 
@@ -107,8 +108,11 @@ Mentions.notify = function(postData) {
 					return;
 				}
 
+				var title = S(results.topic.title).decodeHTMLEntities().s;
+				var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
+
 				Notifications.create({
-					bodyShort: '[[mentions:user_mentioned_you_in, ' + results.author + ', ' + results.topic.title + ']]',
+					bodyShort: '[[mentions:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]',
 					bodyLong: postData.content,
 					nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
 					pid: postData.pid,
