@@ -12,7 +12,7 @@ var	async = module.parent.require('async'),
 	Notifications = module.parent.require('./notifications'),
 	Privileges = module.parent.require('./privileges'),
 	Utils = module.parent.require('../public/src/utils'),
-
+	db = module.parent.require('./database'),
 	SocketPlugins = module.parent.require('./socket.io/plugins'),
 
 	regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g'),	// used in post text transform, accounts for HTML
@@ -99,6 +99,26 @@ Mentions.notify = function(postData) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
 			});
 
+			/* Check if user who mention is ignored by mentioned user
+			 Compatible with Ignore Users plugin
+			 */
+			
+			var filteredUids = [];
+			async.each(uids, function(u, cb){
+					db.isSetMember('ignored:' + u, postData.uid, function(err, isIgnored){
+						if(!isIgnored)
+						{
+							filteredUids.push(u);
+						}
+			 			cb();
+					});
+			}, function(err){
+				if(err)
+			 	{		
+					filteredUids = uids;
+			 	}
+			});
+			
 			if (!uids.length) {
 				return;
 			}
@@ -123,7 +143,7 @@ Mentions.notify = function(postData) {
 					if (err || !notification) {
 						return;
 					}
-					Notifications.push(notification, uids);
+					Notifications.push(notification, filteredUids);
 				});
 			});
 		});
