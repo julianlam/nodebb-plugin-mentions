@@ -118,7 +118,7 @@ Mentions.notify = function(postData) {
 					pid: postData.pid,
 					tid: postData.tid,
 					from: postData.uid,
-					path: '/user/' + postData.uid,
+					path: '/post/' + postData.pid,
 					importance: 6
 				}, function(err, notification) {
 					if (err || !notification) {
