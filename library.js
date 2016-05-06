@@ -221,7 +221,7 @@ Mentions.parseRaw = function(content, callback) {
 					var plain = match.slice(0, atIndex);
 					match = match.slice(atIndex);
 					var str = results.uid
-							? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/user/' + slug + '">' + match + '</a>'
+							? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
 							: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 					return plain + str;
