@@ -240,11 +240,11 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 		return input;
 	}
 	if (stripBlockquote) {
-		var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*<\/blockquote>/gm;
+		var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*?<\/blockquote>/gm;
 		input = input.replace(bqMatch, '');
 	}
 	if (stripCode) {
-		var pfMatch = isMarkdown ? /`[^`\n]+`/gm : /<code>.*<\/code>/gm;
+		var pfMatch = isMarkdown ? /`[^`\n]+`/gm : /<code[\s\S]*?<\/code>/gm;
 		input = input.replace(pfMatch, '');
 	}
 
