@@ -112,7 +112,7 @@ Mentions.notify = function(postData) {
 				var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 				Notifications.create({
-					bodyShort: '[[mentions:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]',
+					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]',
 					bodyLong: postData.content,
 					nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
 					pid: postData.pid,
