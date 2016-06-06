@@ -173,14 +173,15 @@ Mentions.parsePost = function(data, callback) {
 };
 
 Mentions.parseRaw = function(content, callback) {
-	var cleanedContent = Mentions.clean(content, false, false, true);
-	if (!cleanedContent) {
-		return callback(null, content);
-	}
-	var matches = cleanedContent.match(regex);
-	var atIndex;
+	var splitContent = Mentions.split(content, false, false, true);
+	var matches = [];
+	splitContent.forEach(function(cleanedContent, i) {
+		if ((i & 1) === 0) {
+			matches = matches.concat(cleanedContent.match(regex) || []);
+		}
+	});
 
-	if (!matches) {
+	if (!matches.length) {
 		return callback(null, content);
 	}
 
@@ -193,7 +194,7 @@ Mentions.parseRaw = function(content, callback) {
 		 *	so need to clean up the cruft by discarding everthing
 		 *	before the @
 		 */
-		atIndex = match.indexOf('@');
+		var atIndex = match.indexOf('@');
 		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
@@ -215,40 +216,49 @@ Mentions.parseRaw = function(content, callback) {
 					? new RegExp('[>|\\s]' + match + '\\b', 'g')
 					: new RegExp('[>|\\s]' + match, 'g');
 
-				content = content.replace(regex, function(match) {
-					// Again, cleaning up lookaround leftover bits
-					var atIndex = match.indexOf('@');
-					var plain = match.slice(0, atIndex);
-					match = match.slice(atIndex);
-					var str = results.uid
-							? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
-							: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+				splitContent = splitContent.map(function(c, i) {
+					if ((i & 1) === 1) {
+						return c;
+					}
+					return c.replace(regex, function(match) {
+						// Again, cleaning up lookaround leftover bits
+						var atIndex = match.indexOf('@');
+						var plain = match.slice(0, atIndex);
+						match = match.slice(atIndex);
+						var str = results.uid
+								? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
+								: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
-					return plain + str;
+						return plain + str;
+					});
 				});
 			}
 
 			next();
 		});
 	}, function(err) {
-		callback(err, content);
+		callback(err, splitContent.join(''));
 	});
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
-	if (!input) {
-		return input;
-	}
-	if (stripBlockquote) {
-		var bqMatch = isMarkdown ? /^>.*$/gm : /^<blockquote>.*?<\/blockquote>/gm;
-		input = input.replace(bqMatch, '');
-	}
-	if (stripCode) {
-		var pfMatch = isMarkdown ? /`[^`\n]+`/gm : /<code[\s\S]*?<\/code>/gm;
-		input = input.replace(pfMatch, '');
-	}
+	var split = Mentions.split(input, isMarkdown, stripBlockquote, stripCode);
+	split = split.filter(function(e, i) {
+		// only keep non-code/non-blockquote
+		return (i & 1) === 0;
+	});
+	return split.join('');
+};
 
-	return input;
+Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
+	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>'];
+	if (splitBlockquote) {
+		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
+	}
+	if (splitCode) {
+		matchers.push(isMarkdown ? '`[^`\n]+`' : '<code[\\s\\S]*?</code>');
+	}
+	return input.split(new RegExp('(' + matchers.join('|') + ')', 'gm'));
 };
 
 /*
