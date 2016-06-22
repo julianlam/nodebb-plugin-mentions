@@ -95,38 +95,54 @@ Mentions.notify = function(postData) {
 				return;
 			}
 
-			var uids = results.uids.concat(results.groupsMembers).filter(function(uid, index, array) {
-				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
-			});
-
-			if (!uids.length) {
+			if (!results.uids.length && !results.groupsMembers.length) {
 				return;
 			}
+			
+			var groupsMembers = [ { group: '', members: results.uids } ];
+			groupsMembers = groupsMembers.concat(results.groupsMembers);
 
-			Privileges.topics.filterUids('read', postData.tid, uids, function(err, uids) {
-				if (err || !uids.length) {
-					return;
-				}
+			async.map(groupsMembers, function(groupMembers, next) {
+			
+				var uids = groupMembers.members;
 
-				var title = S(results.topic.title).decodeHTMLEntities().s;
-				var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
-
-				Notifications.create({
-					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]',
-					bodyLong: postData.content,
-					nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
-					pid: postData.pid,
-					tid: postData.tid,
-					from: postData.uid,
-					path: '/post/' + postData.pid,
-					importance: 6
-				}, function(err, notification) {
-					if (err || !notification) {
+				Privileges.topics.filterUids('read', postData.tid, uids, function(err, uids) {
+			
+					if (err || !uids.length) {
 						return;
 					}
-					Notifications.push(notification, uids);
+
+					var title = S(results.topic.title).decodeHTMLEntities().s;
+					var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
+					
+					var bodyShort = '';
+					if (groupMembers.group.length) {
+						bodyShort = '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupMembers.group + ', ' + titleEscaped + ']]'
+					} else {
+						bodyShort = '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]';
+					}
+
+					Notifications.create({
+						bodyShort: bodyShort,
+						bodyLong: postData.content,
+						nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
+						pid: postData.pid,
+						tid: postData.tid,
+						from: postData.uid,
+						path: '/post/' + postData.pid,
+						importance: 6
+					}, function(err, notification) {
+						if (err || !notification) {
+							return;
+						}
+						Notifications.push(notification, uids);
+					});
 				});
+				
+				next();
+			
 			});
+			
 		});
 	});
 };
@@ -139,21 +155,15 @@ function getGroupMemberUids(groupRecipients, callback) {
 			return callback(err);
 		}
 		async.map(groups, function(group, next) {
-			Groups.getMembers(group, 0, -1, next);
-		}, function(err, results) {
-			if (err) {
-				return callback(err);
-			}
-
-			var uids = [];
-			results.forEach(function(members) {
-				uids = uids.concat(members);
-			});
-			uids = uids.filter(function(uid, index, array) {
-				return parseInt(uid, 10) && array.indexOf(uid) === index;
-			});
-			callback(null, uids);
-		});
+			async.parallel({
+				group: function(next) {
+					next(null, group);
+				},
+				members: function(next) {
+					Groups.getMembers(group, 0, -1, next);
+				}
+			}, next);
+		}, callback);
 	});
 }
 
