@@ -1,28 +1,29 @@
 'use strict';
 
-var	async = module.parent.require('async'),
-	S = module.parent.require('string'),
-	XRegExp = module.parent.require('xregexp'),
-	validator = module.parent.require('validator'),
+var	async = module.parent.require('async');
+var S = module.parent.require('string');
+var winston = module.parent.require('winston');
+var XRegExp = module.parent.require('xregexp');
+var validator = module.parent.require('validator');
+var nconf = module.parent.require('nconf');
 
-	nconf = module.parent.require('nconf'),
-	Topics = module.parent.require('./topics'),
-	User = module.parent.require('./user'),
-	Groups = module.parent.require('./groups'),
-	Notifications = module.parent.require('./notifications'),
-	Privileges = module.parent.require('./privileges'),
-	Utils = module.parent.require('../public/src/utils'),
+var Topics = module.parent.require('./topics');
+var User = module.parent.require('./user');
+var Groups = module.parent.require('./groups');
+var Notifications = module.parent.require('./notifications');
+var Privileges = module.parent.require('./privileges');
+var Utils = module.parent.require('../public/src/utils');
 
-	SocketPlugins = module.parent.require('./socket.io/plugins'),
+var SocketPlugins = module.parent.require('./socket.io/plugins');
 
-	regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g'),	// used in post text transform, accounts for HTML
-	rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g'),	// used in notifications, as raw text is passed in this hook
-	isLatinMention = /@[\w\d\-_.]+$/,
-	removePunctuationSuffix = function(string) {
-		return string.replace(/[!?.]*$/, '');
-	},
+var regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
+var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
+var isLatinMention = /@[\w\d\-_.]+$/;
+var removePunctuationSuffix = function(string) {
+	return string.replace(/[!?.]*$/, '');
+};
 
-	Mentions = {};
+var Mentions = {};
 
 SocketPlugins.mentions = {};
 
@@ -84,7 +85,7 @@ Mentions.notify = function(postData) {
 					User.getUidByUserslug(slug, next);
 				}, next);
 			},
-			groupsMembers: function(next) {
+			groupData: function(next) {
 				getGroupMemberUids(results.groupRecipients, next);
 			},
 			topicFollowers: function(next) {
@@ -95,64 +96,90 @@ Mentions.notify = function(postData) {
 				return;
 			}
 
-			var uids = results.uids.concat(results.groupsMembers).filter(function(uid, index, array) {
+			var title = S(results.topic.title).decodeHTMLEntities().s;
+			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
+
+			var uids = results.uids.filter(function(uid, index, array) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
 			});
 
-			if (!uids.length) {
-				return;
-			}
-
-			Privileges.topics.filterUids('read', postData.tid, uids, function(err, uids) {
-				if (err || !uids.length) {
-					return;
-				}
-
-				var title = S(results.topic.title).decodeHTMLEntities().s;
-				var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
-
-				Notifications.create({
-					bodyShort: '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]',
-					bodyLong: postData.content,
-					nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid,
-					pid: postData.pid,
-					tid: postData.tid,
-					from: postData.uid,
-					path: '/post/' + postData.pid,
-					importance: 6
-				}, function(err, notification) {
-					if (err || !notification) {
-						return;
-					}
-					Notifications.push(notification, uids);
+			var groupMemberUids = [];
+			results.groupData.groupNames.forEach(function(groupName, index) {
+				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid, index, array) {
+					return array.indexOf(uid) === index &&
+						uids.indexOf(uid) === -1 &&
+						parseInt(uid, 10) !== parseInt(postData.uid, 10) &&
+						results.topicFollowers.indexOf(uid.toString()) === -1 &&
+						groupMemberUids.indexOf(uid) === -1;
 				});
+				groupMemberUids = groupMemberUids.concat(results.groupData.groupMembers[index]);
+			});
+
+			sendNotificationToUids(postData, uids, 'user', '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]');
+			results.groupData.groupNames.forEach(function(groupName, index) {
+				var memberUids = results.groupData.groupMembers[index];
+				sendNotificationToUids(postData, memberUids, groupName, '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupName + ', ' + titleEscaped + ']]');
 			});
 		});
 	});
 };
 
+function sendNotificationToUids(postData, uids, nidType, notificationText) {
+	if (!uids.length) {
+		return;
+	}
+
+	async.waterfall([
+		function(next) {
+			Privileges.topics.filterUids('read', postData.tid, uids, next);
+		},
+		function(_uids, next) {
+			uids = _uids;
+			if (!uids.length) {
+				return;
+			}
+			createNotification(postData, nidType, notificationText, next);
+		},
+		function(notification, next) {
+			if (notification) {
+				Notifications.push(notification, uids);
+			}
+			next();
+		}
+	], function(err) {
+		if (err) {
+			return winston.error(err);
+		}
+	});
+}
+
+function createNotification(postData, nidType, notificationText, callback) {
+	Notifications.create({
+		bodyShort: notificationText,
+		bodyLong: postData.content,
+		nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid + ':' + nidType,
+		pid: postData.pid,
+		tid: postData.tid,
+		from: postData.uid,
+		path: '/post/' + postData.pid,
+		importance: 6
+	}, callback);
+}
+
 function getGroupMemberUids(groupRecipients, callback) {
 	async.map(groupRecipients, function(slug, next) {
 		Groups.getGroupNameByGroupSlug(slug, next);
-	}, function(err, groups) {
+	}, function(err, groupNames) {
 		if (err) {
 			return callback(err);
 		}
-		async.map(groups, function(group, next) {
-			Groups.getMembers(group, 0, -1, next);
-		}, function(err, results) {
+		async.map(groupNames, function(groupName, next) {
+			Groups.getMembers(groupName, 0, -1, next);
+		}, function(err, groupMembers) {
 			if (err) {
 				return callback(err);
 			}
-
-			var uids = [];
-			results.forEach(function(members) {
-				uids = uids.concat(members);
-			});
-			uids = uids.filter(function(uid, index, array) {
-				return parseInt(uid, 10) && array.indexOf(uid) === index;
-			});
-			callback(null, uids);
+			callback(null, {groupNames: groupNames, groupMembers: groupMembers});
 		});
 	});
 }
