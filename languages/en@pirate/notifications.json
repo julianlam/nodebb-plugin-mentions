@@ -1,3 +1,4 @@
 {
-    "user_mentioned_you_in": "<strong>%1</strong> mentioned you in <strong>%2</strong>"
+	"user_mentioned_you_in": "<strong>%1</strong> spoke yer name in <strong>%2</strong>",
+	"user_mentioned_group_in": "<strong>%1</strong> called fer <strong>%2</strong> in <strong>%3</strong>"
 }
