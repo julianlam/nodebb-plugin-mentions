@@ -134,6 +134,9 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 			Privileges.topics.filterUids('read', postData.tid, uids, next);
 		},
 		function(_uids, next) {
+			Topics.filterIgnoringUids(postData.tid, _uids, next);
+		},
+		function(_uids, next) {
 			uids = _uids;
 			if (!uids.length) {
 				return;
