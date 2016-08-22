@@ -12,8 +12,8 @@
 	"scripts": [
 		"static/autofill.js"
 	],
-	"less": [
-		"static/style.less"
+	"sass": [
+		"static/style.scss"
 	],
 	"languages": "languages",
 	"defaultLang": "en_GB"
