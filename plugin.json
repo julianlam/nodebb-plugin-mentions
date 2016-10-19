@@ -1,20 +1,20 @@
 {
-	"id": "nodebb-plugin-mentions",
-	"name": "Username Mentions",
-	"description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their username",
-	"url": "https://github.com/julianlam/nodebb-plugin-mentions",
-	"library": "./library.js",
-	"hooks": [
-		{ "hook": "filter:parse.post", "method": "parsePost" },
-		{ "hook": "filter:parse.raw", "method": "parseRaw" },
-		{ "hook": "action:post.save", "method": "notify" }
-	],
-	"scripts": [
-		"static/autofill.js"
-	],
-	"less": [
-		"static/style.less"
-	],
-	"languages": "languages",
-	"defaultLang": "en_GB"
+  "id": "nodebb-plugin-mentions",
+  "name": "Username Mentions",
+  "description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their username",
+  "url": "https://github.com/julianlam/nodebb-plugin-mentions",
+  "library": "./library.js",
+  "hooks": [
+    { "hook": "filter:parse.post", "method": "parsePost" },
+    { "hook": "filter:parse.raw", "method": "parseRaw" },
+    { "hook": "action:post.save", "method": "notify" }
+  ],
+  "scripts": [
+    "static/autofill.js"
+  ],
+  "less": [
+    "static/style.less"
+  ],
+  "languages": "languages",
+  "defaultLang": "en_GB"
 }
