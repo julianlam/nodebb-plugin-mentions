@@ -1,6 +1,6 @@
 'use strict';
 
-var	async = module.parent.require('async');
+var	async = require('async');
 var S = module.parent.require('string');
 var winston = module.parent.require('winston');
 var XRegExp = module.parent.require('xregexp');
@@ -28,16 +28,6 @@ var Mentions = {};
 SocketPlugins.mentions = {};
 
 Mentions.notify = function(postData) {
-	function filter(matches, method, callback) {
-		async.filter(matches, function(match, next) {
-			method(match, function(err, exists) {
-				next(!err && exists);
-			});
-		}, function(matches) {
-			callback(null, matches);
-		});
-	}
-
 	var cleanedContent = Mentions.clean(postData.content, true, true, true);
 	var matches = cleanedContent.match(rawRegex);
 
@@ -59,10 +49,10 @@ Mentions.notify = function(postData) {
 
 	async.parallel({
 		userRecipients: function(next) {
-			filter(matches, User.existsBySlug, next);
+			async.filter(matches, User.existsBySlug, next);
 		},
 		groupRecipients: function(next) {
-			filter(matches, Groups.existsBySlug, next);
+			async.filter(matches, Groups.existsBySlug, next);
 		}
 	}, function(err, results) {
 		if (err) {
