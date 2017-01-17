@@ -1,6 +1,6 @@
 'use strict';
 
-var	async = module.parent.require('async');
+var async = module.parent.require('async');
 var S = module.parent.require('string');
 var winston = module.parent.require('winston');
 var XRegExp = module.parent.require('xregexp');
@@ -19,21 +19,52 @@ var SocketPlugins = module.parent.require('./socket.io/plugins');
 var regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
 var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
 var isLatinMention = /@[\w\d\-_.]+$/;
-var removePunctuationSuffix = function(string) {
+var removePunctuationSuffix = function (string) {
 	return string.replace(/[!?.]*$/, '');
 };
+
+var additionalNoMentionGroups = [];
 
 var Mentions = {};
 
 SocketPlugins.mentions = {};
 
-Mentions.notify = function(postData) {
+Mentions.buildMenu = function (custom_header, callback) {
+	custom_header.plugins.push({
+		route: '/plugins/mentions',
+		icon: 'fa-at',
+		name: 'Mentions'
+	});
+
+	callback(null, custom_header);
+};
+
+Mentions.init = function (data, callback) {
+	var controller = require('./controller');
+
+	data.router.get('/admin/plugins/mentions', data.middleware.admin.buildHeader, controller.renderAdminPage);
+	data.router.get('/api/admin/plugins/mentions', controller.renderAdminPage);
+
+	Mentions.loadSettings(callback);
+};
+
+Mentions.loadSettings = function (callback) {
+	var settings = require('./settings');
+
+	settings.get(function (noMentionGroups) {
+		additionalNoMentionGroups = noMentionGroups;
+
+		callback && callback();
+	});
+};
+
+Mentions.notify = function (postData) {
 	function filter(matches, method, callback) {
-		async.filter(matches, function(match, next) {
-			method(match, function(err, exists) {
+		async.filter(matches, function (match, next) {
+			method(match, function (err, exists) {
 				next(!err && exists);
 			});
-		}, function(matches) {
+		}, function (matches) {
 			callback(null, matches);
 		});
 	}
@@ -45,11 +76,11 @@ Mentions.notify = function(postData) {
 		return;
 	}
 
-	var noMentionGroups = ['registered-users', 'guests'];
+	var noMentionGroups = ['registered-users', 'guests'].concat(additionalNoMentionGroups);
 
-	matches = matches.map(function(match) {
+	matches = matches.map(function (match) {
 		return Utils.slugify(match);
-	}).filter(function(match, index, array) {
+	}).filter(function (match, index, array) {
 		return match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1;
 	});
 
@@ -58,13 +89,13 @@ Mentions.notify = function(postData) {
 	}
 
 	async.parallel({
-		userRecipients: function(next) {
+		userRecipients: function (next) {
 			filter(matches, User.existsBySlug, next);
 		},
-		groupRecipients: function(next) {
+		groupRecipients: function (next) {
 			filter(matches, Groups.existsBySlug, next);
 		}
-	}, function(err, results) {
+	}, function (err, results) {
 		if (err) {
 			return;
 		}
@@ -74,24 +105,24 @@ Mentions.notify = function(postData) {
 		}
 
 		async.parallel({
-			topic: function(next) {
+			topic: function (next) {
 				Topics.getTopicFields(postData.tid, ['title', 'cid'], next);
 			},
-			author: function(next) {
+			author: function (next) {
 				User.getUserField(postData.uid, 'username', next);
 			},
-			uids: function(next) {
-				async.map(results.userRecipients, function(slug, next) {
+			uids: function (next) {
+				async.map(results.userRecipients, function (slug, next) {
 					User.getUidByUserslug(slug, next);
 				}, next);
 			},
-			groupData: function(next) {
+			groupData: function (next) {
 				getGroupMemberUids(results.groupRecipients, next);
 			},
-			topicFollowers: function(next) {
+			topicFollowers: function (next) {
 				Topics.getFollowers(postData.tid, next);
 			}
-		}, function(err, results) {
+		}, function (err, results) {
 			if (err) {
 				return;
 			}
@@ -99,13 +130,13 @@ Mentions.notify = function(postData) {
 			var title = S(results.topic.title).decodeHTMLEntities().s;
 			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
-			var uids = results.uids.filter(function(uid, index, array) {
+			var uids = results.uids.filter(function (uid, index, array) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
 			});
 
 			var groupMemberUids = [];
-			results.groupData.groupNames.forEach(function(groupName, index) {
-				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid, index, array) {
+			results.groupData.groupNames.forEach(function (groupName, index) {
+				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function (uid, index, array) {
 					return array.indexOf(uid) === index &&
 						uids.indexOf(uid) === -1 &&
 						parseInt(uid, 10) !== parseInt(postData.uid, 10) &&
@@ -116,7 +147,7 @@ Mentions.notify = function(postData) {
 			});
 
 			sendNotificationToUids(postData, uids, 'user', '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]');
-			results.groupData.groupNames.forEach(function(groupName, index) {
+			results.groupData.groupNames.forEach(function (groupName, index) {
 				var memberUids = results.groupData.groupMembers[index];
 				sendNotificationToUids(postData, memberUids, groupName, '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupName + ', ' + titleEscaped + ']]');
 			});
@@ -130,23 +161,23 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 	}
 
 	async.waterfall([
-		function(next) {
+		function (next) {
 			Privileges.topics.filterUids('read', postData.tid, uids, next);
 		},
-		function(_uids, next) {
+		function (_uids, next) {
 			uids = _uids;
 			if (!uids.length) {
 				return;
 			}
 			createNotification(postData, nidType, notificationText, next);
 		},
-		function(notification, next) {
+		function (notification, next) {
 			if (notification) {
 				Notifications.push(notification, uids);
 			}
 			next();
 		}
-	], function(err) {
+	], function (err) {
 		if (err) {
 			return winston.error(err);
 		}
@@ -167,29 +198,29 @@ function createNotification(postData, nidType, notificationText, callback) {
 }
 
 function getGroupMemberUids(groupRecipients, callback) {
-	async.map(groupRecipients, function(slug, next) {
+	async.map(groupRecipients, function (slug, next) {
 		Groups.getGroupNameByGroupSlug(slug, next);
-	}, function(err, groupNames) {
+	}, function (err, groupNames) {
 		if (err) {
 			return callback(err);
 		}
-		async.map(groupNames, function(groupName, next) {
+		async.map(groupNames, function (groupName, next) {
 			Groups.getMembers(groupName, 0, -1, next);
-		}, function(err, groupMembers) {
+		}, function (err, groupMembers) {
 			if (err) {
 				return callback(err);
 			}
-			callback(null, {groupNames: groupNames, groupMembers: groupMembers});
+			callback(null, { groupNames: groupNames, groupMembers: groupMembers });
 		});
 	});
 }
 
-Mentions.parsePost = function(data, callback) {
+Mentions.parsePost = function (data, callback) {
 	if (!data || !data.postData || !data.postData.content) {
 		return callback(null, data);
 	}
 
-	Mentions.parseRaw(data.postData.content, function(err, content) {
+	Mentions.parseRaw(data.postData.content, function (err, content) {
 		if (err) {
 			return callback(err);
 		}
@@ -199,10 +230,10 @@ Mentions.parsePost = function(data, callback) {
 	});
 };
 
-Mentions.parseRaw = function(content, callback) {
+Mentions.parseRaw = function (content, callback) {
 	var splitContent = Mentions.split(content, false, false, true);
 	var matches = [];
-	splitContent.forEach(function(cleanedContent, i) {
+	splitContent.forEach(function (cleanedContent, i) {
 		if ((i & 1) === 0) {
 			matches = matches.concat(cleanedContent.match(regex) || []);
 		}
@@ -212,10 +243,10 @@ Mentions.parseRaw = function(content, callback) {
 		return callback(null, content);
 	}
 
-	matches = matches.filter(function(cur, idx) {
+	matches = matches.filter(function (cur, idx) {
 		// Eliminate duplicates
 		return idx === matches.indexOf(cur);
-	}).map(function(match) {
+	}).map(function (match) {
 		/**
 		 *	Javascript-favour of regex does not support lookaround,
 		 *	so need to clean up the cruft by discarding everthing
@@ -225,7 +256,7 @@ Mentions.parseRaw = function(content, callback) {
 		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
-	async.each(matches, function(match, next) {
+	async.each(matches, function (match, next) {
 		var slug = Utils.slugify(match.slice(1));
 
 		match = removePunctuationSuffix(match);
@@ -233,7 +264,7 @@ Mentions.parseRaw = function(content, callback) {
 		async.parallel({
 			groupExists: async.apply(Groups.existsBySlug, slug),
 			uid: async.apply(User.getUidByUserslug, slug)
-		}, function(err, results) {
+		}, function (err, results) {
 			if (err) {
 				return next(err);
 			}
@@ -243,18 +274,18 @@ Mentions.parseRaw = function(content, callback) {
 					? new RegExp('[>|\\s]' + match + '\\b', 'g')
 					: new RegExp('[>|\\s]' + match, 'g');
 
-				splitContent = splitContent.map(function(c, i) {
+				splitContent = splitContent.map(function (c, i) {
 					if ((i & 1) === 1) {
 						return c;
 					}
-					return c.replace(regex, function(match) {
+					return c.replace(regex, function (match) {
 						// Again, cleaning up lookaround leftover bits
 						var atIndex = match.indexOf('@');
 						var plain = match.slice(0, atIndex);
 						match = match.slice(atIndex);
 						var str = results.uid
-								? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
-								: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+							? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
+							: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 						return plain + str;
 					});
@@ -263,21 +294,21 @@ Mentions.parseRaw = function(content, callback) {
 
 			next();
 		});
-	}, function(err) {
+	}, function (err) {
 		callback(err, splitContent.join(''));
 	});
 };
 
-Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
+Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
 	var split = Mentions.split(input, isMarkdown, stripBlockquote, stripCode);
-	split = split.filter(function(e, i) {
+	split = split.filter(function (e, i) {
 		// only keep non-code/non-blockquote
 		return (i & 1) === 0;
 	});
 	return split.join('');
 };
 
-Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
+Mentions.split = function (input, isMarkdown, splitBlockquote, splitCode) {
 	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>'];
 	if (splitBlockquote) {
 		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
@@ -292,12 +323,12 @@ Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
 	WebSocket methods
 */
 
-SocketPlugins.mentions.listGroups = function(socket, data, callback) {
-	Groups.getGroups('groups:visible:createtime', 0, -1, function(err, groups) {
+SocketPlugins.mentions.listGroups = function (socket, data, callback) {
+	Groups.getGroups('groups:visible:createtime', 0, -1, function (err, groups) {
 		if (err) {
 			return callback(err);
 		}
-		groups = groups.filter(Boolean).map(function(groupName) {
+		groups = groups.filter(Boolean).map(function (groupName) {
 			return validator.escape(groupName);
 		});
 		callback(null, groups);
