@@ -5,9 +5,11 @@
 	"url": "https://github.com/julianlam/nodebb-plugin-mentions",
 	"library": "./library.js",
 	"hooks": [
+		{ "hook": "static:app.load", "method": "init" },
 		{ "hook": "filter:parse.post", "method": "parsePost" },
 		{ "hook": "filter:parse.raw", "method": "parseRaw" },
-		{ "hook": "action:post.save", "method": "notify" }
+		{ "hook": "action:post.save", "method": "notify" },        
+		{ "hook": "filter:admin.header.build", "method": "buildMenu"}
 	],
 	"scripts": [
 		"static/autofill.js"
@@ -16,5 +18,9 @@
 		"static/style.less"
 	],
 	"languages": "languages",
-	"defaultLang": "en_GB"
+	"defaultLang": "en_GB",
+    "templates": "./public/templates",
+    "acpScripts": [
+        "public/js/admin.js"
+    ]
 }
