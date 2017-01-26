@@ -1,6 +1,6 @@
 'use strict';
 
-var	async = module.parent.require('async');
+var	async = require('async');
 var S = module.parent.require('string');
 var winston = module.parent.require('winston');
 var XRegExp = module.parent.require('xregexp');
@@ -38,6 +38,7 @@ Mentions.notify = function(data) {
 		});
 	}
 	var postData = data.post;
+
 	var cleanedContent = Mentions.clean(postData.content, true, true, true);
 	var matches = cleanedContent.match(rawRegex);
 
@@ -59,10 +60,10 @@ Mentions.notify = function(data) {
 
 	async.parallel({
 		userRecipients: function(next) {
-			filter(matches, User.existsBySlug, next);
+			async.filter(matches, User.existsBySlug, next);
 		},
 		groupRecipients: function(next) {
-			filter(matches, Groups.existsBySlug, next);
+			async.filter(matches, Groups.existsBySlug, next);
 		}
 	}, function(err, results) {
 		if (err) {

@@ -1,6 +1,6 @@
 {
   "name": "nodebb-plugin-mentions",
-  "version": "1.1.3",
+  "version": "2.0.0",
   "description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their username",
   "main": "library.js",
   "scripts": {
@@ -23,5 +23,8 @@
   },
   "nbbpm": {
     "compatibility": "^1.5.0"
+  },
+  "dependencies": {
+    "async": "^2.1.4"
   }
 }
