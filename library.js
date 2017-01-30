@@ -279,6 +279,10 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 };
 
 Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
+	if (!input) {
+		return [];
+	}
+
 	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>'];
 	if (splitBlockquote) {
 		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
