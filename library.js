@@ -28,17 +28,7 @@ var Mentions = {};
 SocketPlugins.mentions = {};
 
 Mentions.notify = function(data) {
-	function filter(matches, method, callback) {
-		async.filter(matches, function(match, next) {
-			method(match, function(err, exists) {
-				next(!err && exists);
-			});
-		}, function(matches) {
-			callback(null, matches);
-		});
-	}
 	var postData = data.post;
-
 	var cleanedContent = Mentions.clean(postData.content, true, true, true);
 	var matches = cleanedContent.match(rawRegex);
 
