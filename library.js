@@ -125,6 +125,11 @@ Mentions.notify = function(data) {
 	});
 };
 
+Mentions.addFilters = function (data, callback) {
+	data.regularFilters.push({ name: '[[notifications:mentions]]', filter: 'mention' });
+	callback(null, data);
+};
+
 function sendNotificationToUids(postData, uids, nidType, notificationText) {
 	if (!uids.length) {
 		return;
