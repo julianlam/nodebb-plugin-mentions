@@ -156,6 +156,7 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 
 function createNotification(postData, nidType, notificationText, callback) {
 	Notifications.create({
+		type: 'mention',
 		bodyShort: notificationText,
 		bodyLong: postData.content,
 		nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid + ':' + nidType,
