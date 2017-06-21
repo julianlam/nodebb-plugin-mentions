@@ -12,6 +12,7 @@ var User = module.parent.require('./user');
 var Groups = module.parent.require('./groups');
 var Notifications = module.parent.require('./notifications');
 var Privileges = module.parent.require('./privileges');
+var Meta = module.parent.require('./meta');
 var Utils = module.parent.require('../public/src/utils');
 
 var SocketPlugins = module.parent.require('./socket.io/plugins');
@@ -23,9 +24,36 @@ var removePunctuationSuffix = function(string) {
 	return string.replace(/[!?.]*$/, '');
 };
 
-var Mentions = {};
-
+var Mentions = {
+	_settings: {},
+	_defaults: {
+		autofillGroups: 'off',
+	}
+};
 SocketPlugins.mentions = {};
+
+Mentions.init = function (data, callback) {
+	var hostMiddleware = module.parent.require('./middleware');
+	var controllers = require('./controllers');
+
+	data.router.get('/admin/plugins/mentions', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
+	data.router.get('/api/admin/plugins/mentions', controllers.renderAdminPage);
+
+	// Retrieve settings
+	Meta.settings.get('mentions', function (err, settings) {
+		Object.assign(Mentions._settings, Mentions._defaults, settings);
+		callback();
+	});
+};
+
+Mentions.addAdminNavigation = function (header, callback) {
+	header.plugins.push({
+		route: '/plugins/mentions',
+		name: 'Mentions'
+	});
+
+	callback(null, header);
+};
 
 Mentions.notify = function(data) {
 	var postData = data.post;
@@ -294,6 +322,10 @@ Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
 */
 
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
+	if (Mentions._settings.autofillGroups === 'off') {
+		return callback(null, []);
+	}
+
 	Groups.getGroups('groups:visible:createtime', 0, -1, function(err, groups) {
 		if (err) {
 			return callback(err);
