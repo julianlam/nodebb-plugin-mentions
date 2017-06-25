@@ -27,8 +27,8 @@ define('admin/plugins/mentions', ['settings'], function (Settings) {
 
 	function applyDefaults() {
 		if (!ajaxify.data.settings || !ajaxify.data.settings.hasOwnProperty('autofillGroups')) {
-			$('input#autofillGroups').parents('.mdl-switch').toggleClass('is-checked', true);
-			$('input#autofillGroups').prop('checked', true);
+			$('input#autofillGroups').parents('.mdl-switch').toggleClass('is-checked', false);
+			$('input#autofillGroups').prop('checked', false);
 		}
 	}
 

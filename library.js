@@ -14,6 +14,7 @@ var Notifications = module.parent.require('./notifications');
 var Privileges = module.parent.require('./privileges');
 var Meta = module.parent.require('./meta');
 var Utils = module.parent.require('../public/src/utils');
+var batch = module.parent.require('./batch');
 
 var SocketPlugins = module.parent.require('./socket.io/plugins');
 
@@ -122,19 +123,21 @@ Mentions.notify = function(data) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
 			});
 
-			var groupMemberUids = [];
+			var groupMemberUids = {};
 			results.groupData.groupNames.forEach(function(groupName, index) {
-				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid, index, array) {
-					return array.indexOf(uid) === index &&
-						uids.indexOf(uid) === -1 &&
+				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid) {
+					if (groupMemberUids[uid]) {
+						return false;
+					}
+					groupMemberUids[uid] = 1;
+					return uids.indexOf(uid) === -1 &&
 						parseInt(uid, 10) !== parseInt(postData.uid, 10) &&
-						results.topicFollowers.indexOf(uid.toString()) === -1 &&
-						groupMemberUids.indexOf(uid) === -1;
+						results.topicFollowers.indexOf(uid.toString()) === -1;
 				});
-				groupMemberUids = groupMemberUids.concat(results.groupData.groupMembers[index]);
 			});
 
 			sendNotificationToUids(postData, uids, 'user', '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]');
+
 			results.groupData.groupNames.forEach(function(groupName, index) {
 				var memberUids = results.groupData.groupMembers[index];
 				sendNotificationToUids(postData, memberUids, groupName, '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupName + ', ' + titleEscaped + ']]');
@@ -153,29 +156,47 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		return;
 	}
 
+	var filteredUids = [];
+	var notification;
 	async.waterfall([
-		function(next) {
-			Privileges.topics.filterUids('read', postData.tid, uids, next);
-		},
-		function(_uids, next) {
-			Topics.filterIgnoringUids(postData.tid, _uids, next);
-		},
-		function(_uids, next) {
-			uids = _uids;
-			if (!uids.length) {
-				return;
-			}
+		function (next) {
 			createNotification(postData, nidType, notificationText, next);
 		},
-		function(notification, next) {
-			if (notification) {
-				Notifications.push(notification, uids);
+		function (_notification, next) {
+			notification = _notification;
+			if (!notification) {
+				return next();
 			}
-			next();
-		}
-	], function(err) {
+
+			batch.processArray(uids, function (uids, next) {
+				async.waterfall([
+					function(next) {
+						Privileges.topics.filterUids('read', postData.tid, uids, next);
+					},
+					function(_uids, next) {
+						Topics.filterIgnoringUids(postData.tid, _uids, next);
+					},
+					function(_uids, next) {
+						if (!_uids.length) {
+							return next();
+						}
+
+						filteredUids = filteredUids.concat(_uids);
+
+						next();
+					}
+				], next);
+			}, {
+				interval: 1000,
+				batch: 500,
+			}, next);
+		},
+	], function (err) {
 		if (err) {
 			return winston.error(err);
+		}
+		if (notification) {
+			Notifications.push(notification, filteredUids);
 		}
 	});
 }
