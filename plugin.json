@@ -18,9 +18,6 @@
 	"acpScripts": [
 		"static/admin.js"
 	],
-	"less": [
-		"static/style.less"
-	],
 	"languages": "languages",
 	"defaultLang": "en_GB",
 	"templates": "templates"
