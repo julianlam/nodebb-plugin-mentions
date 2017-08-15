@@ -1,0 +1,5 @@
+{
+	"mentions": "Mentions",
+	"user_mentioned_you_in": "<strong>%1</strong> 在 <strong>%2</strong> 中提到了您",
+	"user_mentioned_group_in": "<strong>%1</strong> 在 <strong>%3</strong> 中提到了 <strong>%2</strong>"
+}
