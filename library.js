@@ -126,7 +126,7 @@ Mentions.notify = function(data) {
 			var groupMemberUids = {};
 			results.groupData.groupNames.forEach(function(groupName, index) {
 				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid) {
-					if (groupMemberUids[uid]) {
+					if (!uid || groupMemberUids[uid]) {
 						return false;
 					}
 					groupMemberUids[uid] = 1;
