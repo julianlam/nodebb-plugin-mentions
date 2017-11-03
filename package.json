@@ -25,6 +25,9 @@
     "compatibility": "^1.5.2"
   },
   "dependencies": {
-    "async": "^2.1.4"
+    "async": "^2.1.4",
+    "string": "^3.3.3",
+    "validator": "^9.1.1",
+    "xregexp": "^3.2.0"
   }
 }

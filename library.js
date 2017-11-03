@@ -1,10 +1,10 @@
 'use strict';
 
 var	async = require('async');
-var S = module.parent.require('string');
+var S = require('string');
 var winston = module.parent.require('winston');
-var XRegExp = module.parent.require('xregexp');
-var validator = module.parent.require('validator');
+var XRegExp = require('xregexp');
+var validator = require('validator');
 var nconf = module.parent.require('nconf');
 
 var Topics = module.parent.require('./topics');
