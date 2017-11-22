@@ -1,7 +1,6 @@
 'use strict';
 
 var	async = require('async');
-var S = require('string');
 var winston = module.parent.require('winston');
 var XRegExp = require('xregexp');
 var validator = require('validator');
@@ -24,6 +23,8 @@ var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
 	return string.replace(/[!?.]*$/, '');
 };
+var Entities = require('html-entities').XmlEntities;
+var entities = new Entities();
 
 var Mentions = {
 	_settings: {},
@@ -116,7 +117,7 @@ Mentions.notify = function(data) {
 				return;
 			}
 
-			var title = S(results.topic.title).decodeHTMLEntities().s;
+			var title = entities.decode(results.topic.title);
 			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 			var uids = results.uids.filter(function(uid, index, array) {
