@@ -17,7 +17,7 @@ var batch = module.parent.require('./batch');
 
 var SocketPlugins = module.parent.require('./socket.io/plugins');
 
-var regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
+var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
 var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
 var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
@@ -300,8 +300,8 @@ Mentions.parseRaw = function(content, callback) {
 
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
-					? new RegExp('[>|\\s]' + match + '\\b', 'g')
-					: new RegExp('[>|\\s]' + match, 'g');
+					? new RegExp('(?:^|\\s)' + match + '\\b', 'g')
+					: new RegExp('(?:^|\\s)' + match, 'g');
 
 				splitContent = splitContent.map(function(c, i) {
 					if ((i & 1) === 1) {
