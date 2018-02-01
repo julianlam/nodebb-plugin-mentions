@@ -342,7 +342,7 @@ Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
 		return [];
 	}
 
-	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>'];
+	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>|<[^>]+>'];
 	if (splitBlockquote) {
 		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
 	}
