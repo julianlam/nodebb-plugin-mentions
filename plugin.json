@@ -10,7 +10,9 @@
 		{ "hook": "filter:parse.post", "method": "parsePost" },
 		{ "hook": "filter:parse.raw", "method": "parseRaw" },
 		{ "hook": "action:post.save", "method": "notify" },
-		{ "hook": "filter:notifications.addFilters", "method": "addFilters" }
+		{ "hook": "filter:notifications.addFilters", "method": "addFilters" },
+		{ "hook": "filter:user.notificationTypes", "method": "notificationTypes" },
+		{ "hook": "filter:user.saveSettings", "method": "filterUserSaveSettings" }
 	],
 	"scripts": [
 		"static/autofill.js"

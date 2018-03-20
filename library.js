@@ -1,10 +1,9 @@
 'use strict';
 
 var	async = require('async');
-var S = module.parent.require('string');
 var winston = module.parent.require('winston');
-var XRegExp = module.parent.require('xregexp');
-var validator = module.parent.require('validator');
+var XRegExp = require('xregexp');
+var validator = require('validator');
 var nconf = module.parent.require('nconf');
 
 var Topics = module.parent.require('./topics');
@@ -18,12 +17,14 @@ var batch = module.parent.require('./batch');
 
 var SocketPlugins = module.parent.require('./socket.io/plugins');
 
-var regex = XRegExp('(?:>|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
+var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
 var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
 var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
 	return string.replace(/[!?.]*$/, '');
 };
+var Entities = require('html-entities').XmlEntities;
+var entities = new Entities();
 
 var Mentions = {
 	_settings: {},
@@ -116,7 +117,7 @@ Mentions.notify = function(data) {
 				return;
 			}
 
-			var title = S(results.topic.title).decodeHTMLEntities().s;
+			var title = entities.decode(results.topic.title);
 			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 			var uids = results.uids.filter(function(uid, index, array) {
@@ -126,7 +127,7 @@ Mentions.notify = function(data) {
 			var groupMemberUids = {};
 			results.groupData.groupNames.forEach(function(groupName, index) {
 				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid) {
-					if (groupMemberUids[uid]) {
+					if (!uid || groupMemberUids[uid]) {
 						return false;
 					}
 					groupMemberUids[uid] = 1;
@@ -149,6 +150,16 @@ Mentions.notify = function(data) {
 Mentions.addFilters = function (data, callback) {
 	data.regularFilters.push({ name: '[[notifications:mentions]]', filter: 'mention' });
 	callback(null, data);
+};
+
+Mentions.notificationTypes = function (data, callback) {
+	data.types.push('notificationType_mention');
+	callback(null, data);
+};
+
+Mentions.filterUserSaveSettings = function (hookData, callback) {
+	hookData.settings.notificationType_mention = hookData.data.notificationType_mention;
+	callback(null, hookData);
 };
 
 function sendNotificationToUids(postData, uids, nidType, notificationText) {
@@ -289,8 +300,8 @@ Mentions.parseRaw = function(content, callback) {
 
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
-					? new RegExp('[>|\\s]' + match + '\\b', 'g')
-					: new RegExp('[>|\\s]' + match, 'g');
+					? new RegExp('(?:^|\\s)' + match + '\\b', 'g')
+					: new RegExp('(?:^|\\s)' + match, 'g');
 
 				splitContent = splitContent.map(function(c, i) {
 					if ((i & 1) === 1) {
@@ -302,8 +313,8 @@ Mentions.parseRaw = function(content, callback) {
 						var plain = match.slice(0, atIndex);
 						match = match.slice(atIndex);
 						var str = results.uid
-								? '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
-								: '<a class="plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
+								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 						return plain + str;
 					});
@@ -331,7 +342,7 @@ Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
 		return [];
 	}
 
-	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>'];
+	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>|<[^>]+>'];
 	if (splitBlockquote) {
 		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
 	}
