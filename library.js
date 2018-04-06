@@ -30,6 +30,7 @@ var Mentions = {
 	_settings: {},
 	_defaults: {
 		autofillGroups: 'off',
+		disableGroupMentions: '[]',
 	}
 };
 SocketPlugins.mentions = {};
@@ -57,6 +58,16 @@ Mentions.addAdminNavigation = function (header, callback) {
 	callback(null, header);
 };
 
+function getNoMentionGroups() {
+	var noMentionGroups = ['registered-users', 'guests'];
+	try {
+		noMentionGroups = noMentionGroups.concat(JSON.parse(Mentions._settings.disableGroupMentions));
+	} catch (err) {
+		winston.error(err);
+	}
+	return noMentionGroups;
+}
+
 Mentions.notify = function(data) {
 	var postData = data.post;
 	var cleanedContent = Mentions.clean(postData.content, true, true, true);
@@ -66,7 +77,7 @@ Mentions.notify = function(data) {
 		return;
 	}
 
-	var noMentionGroups = ['registered-users', 'guests'];
+	var noMentionGroups = getNoMentionGroups();
 
 	matches = matches.map(function(match) {
 		return Utils.slugify(match);
@@ -365,7 +376,10 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 		if (err) {
 			return callback(err);
 		}
-		groups = groups.filter(Boolean).map(function(groupName) {
+		var noMentionGroups = getNoMentionGroups();
+		groups = groups.filter(function(groupName) {
+			return groupName && !noMentionGroups.includes(groupName);
+		}).map(function(groupName) {
 			return validator.escape(groupName);
 		});
 		callback(null, groups);

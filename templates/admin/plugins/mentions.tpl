@@ -10,6 +10,14 @@
 					</label>
 				</div>
 			</div>
+			<div class="form-group">
+				<label for="disableGroupMentions">Select groups you wish to disable mentions</label>
+				<select class="form-control" id="disableGroupMentions" name="disableGroupMentions" multiple size="20">
+					<!-- BEGIN groups -->
+					<option value="{groups.displayName}">{groups.displayName}</option>
+					<!-- END groups -->
+				</select>
+			</div>
 		</div>
 	</div>
 </form>
