@@ -1,4 +1,6 @@
 {
-    "mentions": "Wspomnienia",
-    "user_mentioned_you_in": "<strong>%1</strong> wspomniał cię w <strong>%2</strong>"
+	"mentions": "Wspomnienia",
+	"user_mentioned_you_in": "<strong>%1</strong> wspomniał o Tobie w <strong>%2</strong>",
+	"user_mentioned_group_in": "<strong>%1</strong> wspomniał <strong>%2</strong> w <strong>%3</strong>",
+	"notificationType_mention": "Kiedy ktoś o Tobie wspomni"
 }
