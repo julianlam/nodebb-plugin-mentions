@@ -168,11 +168,6 @@ Mentions.notificationTypes = function (data, callback) {
 	callback(null, data);
 };
 
-Mentions.filterUserSaveSettings = function (hookData, callback) {
-	hookData.settings.notificationType_mention = hookData.data.notificationType_mention;
-	callback(null, hookData);
-};
-
 function sendNotificationToUids(postData, uids, nidType, notificationText) {
 	if (!uids.length) {
 		return;
