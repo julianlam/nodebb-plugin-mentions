@@ -6,6 +6,7 @@ var XRegExp = require('xregexp');
 var validator = require('validator');
 var nconf = module.parent.require('nconf');
 
+var db = module.parent.require('./database');
 var Topics = module.parent.require('./topics');
 var User = module.parent.require('./user');
 var Groups = module.parent.require('./groups');
@@ -193,6 +194,22 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 					function(_uids, next) {
 						Topics.filterIgnoringUids(postData.tid, _uids, next);
 					},
+					function (_uids, next) {
+						// Filter out uids that have already been notified for this pid
+						db.getListRange('mentions:sent:' + postData.pid, 0, -1, function (err, uids) {
+							if (err) {
+								return next(err);
+							}
+
+							uids = uids.map(uid => parseInt(uid, 10));
+
+							next(null, _uids.filter(function (uid) {
+								if (uids.includes(uid)) {
+								}
+								return !uids.includes(uid);
+							}));
+						});
+					},
 					function(_uids, next) {
 						if (!_uids.length) {
 							return next();
@@ -213,7 +230,11 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 			return winston.error(err);
 		}
 		if (notification) {
-			Notifications.push(notification, filteredUids);
+			Notifications.push(notification, filteredUids, function () {
+				async.each(filteredUids, function (uid, next) {
+					db.listAppend('mentions:sent:' + postData.pid, uid, next);
+				});
+			});
 		}
 	});
 }
