@@ -196,18 +196,8 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 					},
 					function (_uids, next) {
 						// Filter out uids that have already been notified for this pid
-						db.getSortedSetRange('mentions:sent:' + postData.pid, 0, -1, function (err, uids) {
-							if (err) {
-								return next(err);
-							}
-
-							uids = uids.map(uid => parseInt(uid, 10));
-
-							next(null, _uids.filter(function (uid) {
-								if (uids.includes(uid)) {
-								}
-								return !uids.includes(uid);
-							}));
+						db.isSortedSetMembers('mentions:sent:' + postData.pid, _uids, function (err, exists) {
+							next(err, _uids.filter((uid, idx) => !exists[idx]))
 						});
 					},
 					function(_uids, next) {
