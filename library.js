@@ -196,18 +196,8 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 					},
 					function (_uids, next) {
 						// Filter out uids that have already been notified for this pid
-						db.getListRange('mentions:sent:' + postData.pid, 0, -1, function (err, uids) {
-							if (err) {
-								return next(err);
-							}
-
-							uids = uids.map(uid => parseInt(uid, 10));
-
-							next(null, _uids.filter(function (uid) {
-								if (uids.includes(uid)) {
-								}
-								return !uids.includes(uid);
-							}));
+						db.isSortedSetMembers('mentions:sent:' + postData.pid, _uids, function (err, exists) {
+							next(err, _uids.filter((uid, idx) => !exists[idx]))
 						});
 					},
 					function(_uids, next) {
@@ -229,11 +219,10 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		if (err) {
 			return winston.error(err);
 		}
-		if (notification) {
+		if (notification && filteredUids.length) {
 			Notifications.push(notification, filteredUids, function () {
-				async.each(filteredUids, function (uid, next) {
-					db.listAppend('mentions:sent:' + postData.pid, uid, next);
-				});
+				const dates = filteredUids.map(() => Date.now());
+				db.sortedSetAdd('mentions:sent:' + postData.pid, dates, filteredUids);
 			});
 		}
 	});
