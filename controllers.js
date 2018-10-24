@@ -1,6 +1,6 @@
 'use strict';
 
-var groups = module.parent.parent.require('./groups');
+var groups = require.main.require('./src/groups');
 
 var Controllers = module.exports;
 

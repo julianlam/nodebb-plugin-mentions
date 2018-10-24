@@ -6,17 +6,17 @@ var XRegExp = require('xregexp');
 var validator = require('validator');
 var nconf = module.parent.require('nconf');
 
-var db = module.parent.require('./database');
-var Topics = module.parent.require('./topics');
-var User = module.parent.require('./user');
-var Groups = module.parent.require('./groups');
-var Notifications = module.parent.require('./notifications');
-var Privileges = module.parent.require('./privileges');
-var Meta = module.parent.require('./meta');
-var Utils = module.parent.require('../public/src/utils');
-var batch = module.parent.require('./batch');
+var db = require.main.require('./src/database');
+var Topics = require.main.require('./src/topics');
+var User = require.main.require('./src/user');
+var Groups = require.main.require('./src/groups');
+var Notifications = require.main.require('./src/notifications');
+var Privileges = require.main.require('./src/privileges');
+var Meta = require.main.require('./src/meta');
+var Utils = require.main.require('./public/src/utils');
+var batch = require.main.require('./src/batch');
 
-var SocketPlugins = module.parent.require('./socket.io/plugins');
+var SocketPlugins = require.main.require('./src/socket.io/plugins');
 
 var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
 var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
@@ -37,7 +37,7 @@ var Mentions = {
 SocketPlugins.mentions = {};
 
 Mentions.init = function (data, callback) {
-	var hostMiddleware = module.parent.require('./middleware');
+	var hostMiddleware = require.main.require('./src/middleware');
 	var controllers = require('./controllers');
 
 	data.router.get('/admin/plugins/mentions', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
