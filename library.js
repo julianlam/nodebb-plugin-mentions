@@ -1,22 +1,25 @@
 'use strict';
 
-var	async = require('async');
+var nbbRequire = require('./lib/nbbRequire');
+
+var nconf = module.parent.require('nconf');
 var winston = module.parent.require('winston');
 var XRegExp = require('xregexp');
 var validator = require('validator');
-var nconf = module.parent.require('nconf');
 
-var db = require.main.require('./src/database');
-var Topics = require.main.require('./src/topics');
-var User = require.main.require('./src/user');
-var Groups = require.main.require('./src/groups');
-var Notifications = require.main.require('./src/notifications');
-var Privileges = require.main.require('./src/privileges');
-var Meta = require.main.require('./src/meta');
-var Utils = require.main.require('./public/src/utils');
-var batch = require.main.require('./src/batch');
+var	async = require('async');
 
-var SocketPlugins = require.main.require('./src/socket.io/plugins');
+var db = nbbRequire('./src/database');
+var Topics = nbbRequire('./src/topics');
+var User = nbbRequire('./src/user');
+var Groups = nbbRequire('./src/groups');
+var Notifications = nbbRequire('./src/notifications');
+var Privileges = nbbRequire('./src/privileges');
+var Meta = nbbRequire('./src/meta');
+var Utils = nbbRequire('./public/src/utils');
+var batch = nbbRequire('./src/batch');
+
+var SocketPlugins = nbbRequire('./src/socket.io/plugins');
 
 var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
 var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
