@@ -30,6 +30,7 @@ var entities = new Entities();
 var Mentions = {
 	_settings: {},
 	_defaults: {
+		disableFollowedTopics: 'off',
 		autofillGroups: 'off',
 		disableGroupMentions: '[]',
 	}
@@ -122,7 +123,11 @@ Mentions.notify = function(data) {
 				getGroupMemberUids(results.groupRecipients, next);
 			},
 			topicFollowers: function(next) {
-				Topics.getFollowers(postData.tid, next);
+				if (Mentions._settings.disableFollowedTopics === 'on') {
+					Topics.getFollowers(postData.tid, next);
+				} else {
+					next(null, []);
+				}
 			}
 		}, function(err, results) {
 			if (err) {
@@ -133,7 +138,7 @@ Mentions.notify = function(data) {
 			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 			var uids = results.uids.filter(function(uid, index, array) {
-				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && results.topicFollowers.indexOf(uid.toString()) === -1;
+				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString());
 			});
 
 			var groupMemberUids = {};
@@ -143,9 +148,9 @@ Mentions.notify = function(data) {
 						return false;
 					}
 					groupMemberUids[uid] = 1;
-					return uids.indexOf(uid) === -1 &&
+					return !uids.includes(uid) &&
 						parseInt(uid, 10) !== parseInt(postData.uid, 10) &&
-						results.topicFollowers.indexOf(uid.toString()) === -1;
+						!results.topicFollowers.includes(uid.toString());
 				});
 			});
 
@@ -219,6 +224,7 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		if (err) {
 			return winston.error(err);
 		}
+
 		if (notification && filteredUids.length) {
 			Notifications.push(notification, filteredUids, function () {
 				const dates = filteredUids.map(() => Date.now());

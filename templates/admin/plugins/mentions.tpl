@@ -4,6 +4,14 @@
 		<div class="col-sm-10 col-xs-12">
 			<div class="form-group">
 				<div class="checkbox">
+					<label for="disableFollowedTopics" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+						<input type="checkbox" class="mdl-switch__input" id="disableFollowedTopics" name="disableFollowedTopics" />
+						<span class="mdl-switch__label">Disable mentions for followed topics.</span>
+					</label>
+				</div>
+			</div>
+			<div class="form-group">
+				<div class="checkbox">
 					<label for="autofillGroups" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
 						<input type="checkbox" class="mdl-switch__input" id="autofillGroups" name="autofillGroups" />
 						<span class="mdl-switch__label">Allow mentioning User Groups</span>
