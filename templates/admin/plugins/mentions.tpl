@@ -19,8 +19,16 @@
 				</div>
 			</div>
 			<div class="form-group">
+				<div class="checkbox">
+					<label for="overrideIgnores" class="mdl-switch mdl-js-switch mdl-js-ripple-effect">
+						<input type="checkbox" class="mdl-switch__input" id="overrideIgnores" name="overrideIgnores" />
+						<span class="mdl-switch__label">Notify recipients of mentions even if topic is explictly ignored</span>
+					</label>
+				</div>
+			</div>
+			<div class="form-group">
 				<label for="disableGroupMentions">Select groups you wish to disable mentions</label>
-				<select class="form-control" id="disableGroupMentions" name="disableGroupMentions" multiple size="20">
+				<select class="form-control" id="disableGroupMentions" name="disableGroupMentions" multiple>
 					<!-- BEGIN groups -->
 					<option value="{groups.displayName}">{groups.displayName}</option>
 					<!-- END groups -->

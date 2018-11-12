@@ -33,6 +33,7 @@ var Mentions = {
 		disableFollowedTopics: 'off',
 		autofillGroups: 'off',
 		disableGroupMentions: '[]',
+		overrideIgnores: 'off',
 	}
 };
 SocketPlugins.mentions = {};
@@ -197,6 +198,10 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 						Privileges.topics.filterUids('read', postData.tid, uids, next);
 					},
 					function(_uids, next) {
+						if (Mentions._settings.overrideIgnores === 'on') {
+							return setImmediate(next, null, _uids);
+						}
+
 						Topics.filterIgnoringUids(postData.tid, _uids, next);
 					},
 					function (_uids, next) {
