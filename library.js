@@ -18,8 +18,7 @@ var batch = require.main.require('./src/batch');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
 
-var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');	// used in post text transform, accounts for HTML
-var rawRegex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\-_.]+)', 'g');	// used in notifications, as raw text is passed in this hook
+var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');
 var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
 	return string.replace(/[!?.]*$/, '');
@@ -74,7 +73,7 @@ function getNoMentionGroups() {
 Mentions.notify = function(data) {
 	var postData = data.post;
 	var cleanedContent = Mentions.clean(postData.content, true, true, true);
-	var matches = cleanedContent.match(rawRegex);
+	var matches = cleanedContent.match(regex);
 
 	if (!matches) {
 		return;
