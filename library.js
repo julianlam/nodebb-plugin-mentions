@@ -355,6 +355,9 @@ Mentions.parseRaw = function(content, callback) {
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
+	// Strip html tags (as the come from Quill/Redactor)
+	input = Utils.stripHTMLTags(input, ['p']);
+
 	var split = Mentions.split(input, isMarkdown, stripBlockquote, stripCode);
 	split = split.filter(function(e, i) {
 		// only keep non-code/non-blockquote
