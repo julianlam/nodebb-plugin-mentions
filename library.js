@@ -18,7 +18,7 @@ var batch = require.main.require('./src/batch');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
 
-var regex = XRegExp('(?:^|\\s)(@[\\p{L}\\d\\-_.]+)', 'g');
+var regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
 var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
 	return string.replace(/[!?.]*$/, '');
@@ -326,8 +326,8 @@ Mentions.parseRaw = function(content, callback) {
 
 			if (results.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
-					? new RegExp('(?:^|\\s)' + match + '\\b', 'g')
-					: new RegExp('(?:^|\\s)' + match, 'g');
+					? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
+					: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
 
 				splitContent = splitContent.map(function(c, i) {
 					if ((i & 1) === 1) {
@@ -355,9 +355,6 @@ Mentions.parseRaw = function(content, callback) {
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
-	// Strip html tags (as the come from Quill/Redactor)
-	input = Utils.stripHTMLTags(input, ['p']);
-
 	var split = Mentions.split(input, isMarkdown, stripBlockquote, stripCode);
 	split = split.filter(function(e, i) {
 		// only keep non-code/non-blockquote
