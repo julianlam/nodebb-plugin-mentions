@@ -329,8 +329,11 @@ Mentions.parseRaw = function(content, callback) {
 					? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
 					: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
 
+				let skip = false;
+
 				splitContent = splitContent.map(function(c, i) {
-					if ((i & 1) === 1) {
+					if (skip || (i & 1) === 1) {
+						skip = c === '<code>';	// if code block detected, skip the content inside of it
 						return c;
 					}
 					return c.replace(regex, function(match) {
