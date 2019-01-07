@@ -376,7 +376,7 @@ Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
 		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
 	}
 	if (splitCode) {
-		matchers.push(isMarkdown ? '`[^`\n]+`' : '<code[\\s\\S]*?</code>');
+		matchers.push(isMarkdown ? '`[^`\n]+`|```[\\s\\S]+```' : '<code[\\s\\S]*?</code>');
 	}
 	return input.split(new RegExp('(' + matchers.join('|') + ')', 'gm'));
 };
