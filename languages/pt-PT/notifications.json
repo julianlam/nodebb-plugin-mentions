@@ -1,4 +1,6 @@
 {
-    "mentions": "Menções",
-    "user_mentioned_you_in": "<strong>%1</strong> mencionou-te no tópico <strong>%2</strong>"
+	"mentions": "Menções",
+	"user_mentioned_you_in": "<strong>%1</strong> mencionou-te no tópico <strong>%2</strong>",
+	"user_mentioned_group_in": "<strong>%1</strong> mencionou o grupo <strong>%2</strong> no tópico <strong>%3</strong>",
+	"notificationType_mention": "Quando alguém te menciona"
 }
