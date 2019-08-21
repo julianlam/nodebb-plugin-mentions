@@ -106,7 +106,6 @@ describe('Mentions', function () {
 			});
 
 			it('should not accidentally split on <annotation> HTML tag', () => {
-				// <p dir="auto">@scoubidou <eq><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>l</mi></mrow><annotation encoding="application/x-tex">l</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span></span></span></span></eq> @alfazaz <a href=""></a></p>
 				const testString = '<p dir="auto">wonderful</p><annotation>what is an annotation anyway</annotation><a href="/">what</a>';
 				const results = [
 					utility.split(testString, false, false, false),
