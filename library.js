@@ -288,17 +288,14 @@ Mentions.parsePost = function(data, callback) {
 };
 
 Mentions.parseRaw = function(content, callback) {
-	console.log('parseraw called');
 	var splitContent = utility.split(content, false, false, true);
 	var matches = [];
 	splitContent.forEach(function(cleanedContent, i) {
 		if ((i & 1) === 0) {
-			console.log('executing match on:', cleanedContent);
 			matches = matches.concat(cleanedContent.match(regex) || []);
 		}
 	});
 
-	console.log('matches', matches);
 	if (!matches.length) {
 		return callback(null, content);
 	}
