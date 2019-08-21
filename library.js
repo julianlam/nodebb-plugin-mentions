@@ -18,6 +18,8 @@ var batch = require.main.require('./src/batch');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
 
+const utility = require('./lib/utility');
+
 var regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
 var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
@@ -286,14 +288,17 @@ Mentions.parsePost = function(data, callback) {
 };
 
 Mentions.parseRaw = function(content, callback) {
-	var splitContent = Mentions.split(content, false, false, true);
+	console.log('parseraw called');
+	var splitContent = utility.split(content, false, false, true);
 	var matches = [];
 	splitContent.forEach(function(cleanedContent, i) {
 		if ((i & 1) === 0) {
+			console.log('executing match on:', cleanedContent);
 			matches = matches.concat(cleanedContent.match(regex) || []);
 		}
 	});
 
+	console.log('matches', matches);
 	if (!matches.length) {
 		return callback(null, content);
 	}
@@ -358,27 +363,12 @@ Mentions.parseRaw = function(content, callback) {
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
-	var split = Mentions.split(input, isMarkdown, stripBlockquote, stripCode);
+	var split = utility.split(input, isMarkdown, stripBlockquote, stripCode);
 	split = split.filter(function(e, i) {
 		// only keep non-code/non-blockquote
 		return (i & 1) === 0;
 	});
 	return split.join('');
-};
-
-Mentions.split = function(input, isMarkdown, splitBlockquote, splitCode) {
-	if (!input) {
-		return [];
-	}
-
-	var matchers = [isMarkdown ? '\\[.*?\\]\\(.*?\\)' : '<a[\\s\\S]*?</a>|<[^>]+>'];
-	if (splitBlockquote) {
-		matchers.push(isMarkdown ? '^>.*$' : '^<blockquote>.*?</blockquote>');
-	}
-	if (splitCode) {
-		matchers.push(isMarkdown ? '`[^`\n]+`|```[\\s\\S]+```' : '<code[\\s\\S]*?</code>');
-	}
-	return input.split(new RegExp('(' + matchers.join('|') + ')', 'gm'));
 };
 
 /*

@@ -29,5 +29,8 @@
     "html-entities": "^1.2.1",
     "validator": "^9.1.1",
     "xregexp": "^3.2.0"
+  },
+  "devDependencies": {
+    "mocha": "^6.2.0"
   }
 }
