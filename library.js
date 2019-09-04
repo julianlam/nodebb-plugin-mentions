@@ -35,6 +35,7 @@ var Mentions = {
 		autofillGroups: 'off',
 		disableGroupMentions: '[]',
 		overrideIgnores: 'off',
+		display: '',
 	}
 };
 SocketPlugins.mentions = {};
@@ -320,13 +321,16 @@ Mentions.parseRaw = function(content, callback) {
 
 		async.parallel({
 			groupExists: async.apply(Groups.existsBySlug, slug),
-			uid: async.apply(User.getUidByUserslug, slug)
+			user: async () => {
+				const uid = await User.getUidByUserslug(slug);
+				return await User.getUserFields(uid, ['username', 'fullname']);
+			},
 		}, function(err, results) {
 			if (err) {
 				return next(err);
 			}
 
-			if (results.uid || results.groupExists) {
+			if (results.user || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
 					: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
@@ -334,6 +338,7 @@ Mentions.parseRaw = function(content, callback) {
 				let skip = false;
 
 				splitContent = splitContent.map(function(c, i) {
+					// *Might* not be needed anymore? Check pls...
 					if (skip || (i & 1) === 1) {
 						skip = c === '<code>';	// if code block detected, skip the content inside of it
 						return c;
@@ -343,7 +348,17 @@ Mentions.parseRaw = function(content, callback) {
 						var atIndex = match.indexOf('@');
 						var plain = match.slice(0, atIndex);
 						match = match.slice(atIndex);
-						var str = results.uid
+
+						switch (Mentions._settings.display) {
+							case 'fullname':
+								match = results.user.fullname || match;
+								break;
+							case 'username':
+								match = results.user.username;
+								break;
+						}
+
+						var str = results.user
 								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
 								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 

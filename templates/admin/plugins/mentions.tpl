@@ -34,6 +34,14 @@
 					<!-- END groups -->
 				</select>
 			</div>
+			<div class="form-group">
+				<label for="display">Mentions will display ...</label>
+				<select class="form-control" id="display" name="display">
+					<option value="">... as written</option>
+					<option value="fullname">... as user&apos;s full name (if set)</option>
+					<option value="username">... as user&apos;s username</option>
+				</select>
+			</div>
 		</div>
 	</div>
 </form>
