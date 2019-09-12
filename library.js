@@ -348,14 +348,15 @@ Mentions.parseRaw = function(content, callback) {
 						var atIndex = match.indexOf('@');
 						var plain = match.slice(0, atIndex);
 						match = match.slice(atIndex);
-
-						switch (Mentions._settings.display) {
-							case 'fullname':
-								match = results.user.fullname || match;
-								break;
-							case 'username':
-								match = results.user.username;
-								break;
+						if (results.user.uid) {
+							switch (Mentions._settings.display) {
+								case 'fullname':
+									match = results.user.fullname || match;
+									break;
+								case 'username':
+									match = results.user.username;
+									break;
+							}
 						}
 
 						var str = results.user.uid
