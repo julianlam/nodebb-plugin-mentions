@@ -323,14 +323,14 @@ Mentions.parseRaw = function(content, callback) {
 			groupExists: async.apply(Groups.existsBySlug, slug),
 			user: async () => {
 				const uid = await User.getUidByUserslug(slug);
-				return await User.getUserFields(uid, ['username', 'fullname']);
+				return await User.getUserFields(uid, ['uid', 'username', 'fullname']);
 			},
 		}, function(err, results) {
 			if (err) {
 				return next(err);
 			}
 
-			if (results.user || results.groupExists) {
+			if (results.user.uid || results.groupExists) {
 				var regex = isLatinMention.test(match)
 					? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
 					: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
@@ -358,8 +358,8 @@ Mentions.parseRaw = function(content, callback) {
 								break;
 						}
 
-						var str = results.user
-								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.uid + '">' + match + '</a>'
+						var str = results.user.uid
+								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.user.uid + '">' + match + '</a>'
 								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
 
 						return plain + str;
