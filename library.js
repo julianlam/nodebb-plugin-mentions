@@ -13,7 +13,7 @@ var Groups = require.main.require('./src/groups');
 var Notifications = require.main.require('./src/notifications');
 var Privileges = require.main.require('./src/privileges');
 var Meta = require.main.require('./src/meta');
-var Utils = require.main.require('./public/src/utils');
+var Utils = require.main.require('./src/utils');
 var batch = require.main.require('./src/batch');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
