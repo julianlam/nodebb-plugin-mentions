@@ -20,6 +20,7 @@ $(document).ready(function() {
 				var usernames;
 				if (!term) {
 					usernames = localUserList.concat(groupList).filter(function(value, index, array) {
+						// Remove duplicates and calling user's username
 						return array.indexOf(value) === index && value !== app.user.username;
 					}).sort(function(a, b) {
 						return a.toLocaleLowerCase() > b.toLocaleLowerCase();
