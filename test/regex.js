@@ -49,7 +49,6 @@ describe('regex', function () {
 		done();
 	});
 	it('should match a mention in all strings', () => {
-		console.log('TITS HAPPENING!!!!')
 		strings.forEach(string => {
 			const matches = string.match(matcher);
 			assert(matches);
