@@ -9,6 +9,7 @@ var nconf = module.parent.require('nconf');
 var db = require.main.require('./src/database');
 var Topics = require.main.require('./src/topics');
 var User = require.main.require('./src/user');
+var Posts = require.main.require('./src/posts');
 var Groups = require.main.require('./src/groups');
 var Notifications = require.main.require('./src/notifications');
 var Privileges = require.main.require('./src/privileges');
@@ -186,7 +187,12 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 	var notification;
 	async.waterfall([
 		function (next) {
-			createNotification(postData, nidType, notificationText, next);
+			Posts.parsePost(postData)
+				.then((parsedPost => next(null, parsedPost)))
+				.catch(next);
+		},
+		function (postObject, next) {
+			createNotification(postObject, nidType, notificationText, next);
 		},
 		function (_notification, next) {
 			notification = _notification;
