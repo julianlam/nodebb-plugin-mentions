@@ -192,6 +192,8 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 				.catch(next);
 		},
 		function (postObject, next) {
+			postObject.content = Posts.relativeToAbsolute(postObject.content, Posts.urlRegex);
+			postObject.content = Posts.relativeToAbsolute(postObject.content, Posts.imgRegex);
 			createNotification(postObject, nidType, notificationText, next);
 		},
 		function (_notification, next) {
