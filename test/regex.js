@@ -60,6 +60,8 @@ describe('splitter', function () {
 	const utility = require('../lib/utility');
 	const testHTMLText = 'this is a post with <code>stuff in code</code> and a\n\n<blockquote>blockquote or two</blockquote>';
 	const testMdText = 'this is a post with `stuff in code` and a \n\n>blockquote or two';
+	const testCodefirstMdText = '`code starts` with regular text afterwards';
+	const testCodefirstHTMLText = '<code>code starts</code> with regular text afterwards';
 
 	it('should not error', () => {
 		const results = [
@@ -95,6 +97,20 @@ describe('splitter', function () {
 			assert.equal(result[3], '<blockquote>blockquote or two</blockquote>');
 		});
 
+		it('should split properly if a post starts with a code block', () => {
+			const result = utility.split(testCodefirstMdText, true, true, true);
+			assert.equal(result[0], '');
+			assert.equal(result[1], '`code starts`');
+			assert.equal(result[2], ' with regular text afterwards');
+		});
+
+		it('should split properly if a post starts with a code block', () => {
+			const result = utility.split(testCodefirstHTMLText, false, true, true);
+			assert.equal(result[0], '');
+			assert.equal(result[1], '<code>code starts</code>');
+			assert.equal(result[2], ' with regular text afterwards');
+		});
+
 		it('should split HTML code blocks that are wrapped with only a <pre>', () => {
 			const testString = '<p dir="auto">test text</p>\n<pre>var value = \'@admin\';</pre>\nafter text';
 			const result = utility.split(testString, false, false, true);
@@ -112,7 +128,8 @@ describe('splitter', function () {
 				utility.split(testString, false, true, true),
 			];
 
-			results.forEach(result => assert.strictEqual(result[0], '<p dir="auto">wonderful</p><annotation>what is an annotation anyway</annotation><a href="/">what</a>'));
+			results.forEach(result => assert.strictEqual(result[0], '<p dir="auto">wonderful</p><annotation>what is an annotation anyway</annotation>'));
+			results.forEach(result => assert.strictEqual(result[1], '<a href="/">what</a>'));
 		});
 	});
 
