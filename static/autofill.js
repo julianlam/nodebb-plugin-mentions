@@ -28,43 +28,28 @@ $(document).ready(function() {
 					return callback(usernames);
 				}
 
-				socket.emit('user.search', {query: term}, function(err, userdata) {
-					if (err) {
-						return callback([]);
-					}
-
-					usernames = userdata.users.map(function(user) {
-						return user.username;
-					});
-
-					subset = localUserList.concat(groupList).filter(function(username) {
-						return username.toLocaleLowerCase().indexOf(term.toLocaleLowerCase()) !== -1;
-					});
-
-					usernames = usernames.concat(subset).filter(function(value, index, array) {
-						return array.indexOf(value) === index;
-					});
-
-					subset = subset.map(function(name) {
-						return name.toLocaleLowerCase();
-					});
-
-					usernames.sort(function(a, b) {
-						if (subset.indexOf(a.toLocaleLowerCase()) !== -1 && subset.indexOf(b.toLocaleLowerCase()) === -1) {
-							return -1;
-						} else if (subset.indexOf(a.toLocaleLowerCase()) === -1 && subset.indexOf(b.toLocaleLowerCase()) !== -1) {
-							return 1;
-						} else {
-							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+				// Get composer metadata
+				var uuid = data.options.className.match(/dropdown-(.+?)\s/)[1];
+				require(['composer'], function (composer) {
+					socket.emit('plugins.mentions.userSearch', {
+						query: term,
+						composerObj: composer.posts[uuid],
+					}, function(err, userdata) {
+						if (err) {
+							return callback([]);
 						}
+
+						usernames = userdata.users.map(function(user) {
+							return user.username;
+						});
+
+						// Remove current user from suggestions
+						if (app.user.username && usernames.indexOf(app.user.username) !== -1) {
+							usernames.splice(usernames.indexOf(app.user.username), 1);
+						}
+
+						callback(usernames);
 					});
-
-					// Remove current user from suggestions
-					if (app.user.username && usernames.indexOf(app.user.username) !== -1) {
-						usernames.splice(usernames.indexOf(app.user.username), 1);
-					}
-
-					callback(usernames);
 				});
 			},
 			index: 1,

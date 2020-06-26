@@ -8,6 +8,7 @@ var nconf = module.parent.require('nconf');
 
 var db = require.main.require('./src/database');
 var Topics = require.main.require('./src/topics');
+var posts = require.main.require('./src/posts');
 var User = require.main.require('./src/user');
 var Groups = require.main.require('./src/groups');
 var Notifications = require.main.require('./src/notifications');
@@ -132,7 +133,7 @@ Mentions.notify = function(data) {
 					next(null, []);
 				}
 			}
-		}, function(err, results) {
+		}, async (err, results) => {
 			if (err) {
 				return;
 			}
@@ -143,6 +144,11 @@ Mentions.notify = function(data) {
 			var uids = results.uids.filter(function(uid, index, array) {
 				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString());
 			});
+
+			if (Mentions._settings.privilegedDirectReplies === 'on') {
+				const toPid = await posts.getPostField(data.post.pid, 'toPid');
+				uids = await filterPrivilegedUids(uids, data.post.cid, toPid);
+			}
 
 			var groupMemberUids = {};
 			results.groupData.groupNames.forEach(function(groupName, index) {
@@ -385,6 +391,33 @@ Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
 };
 
 /*
+	Local utility methods
+*/
+async function filterPrivilegedUids (uids, cid, toPid) {
+	let toPidUid;
+	if (toPid) {
+		toPidUid = await posts.getPostField(toPid, 'uid');
+	}
+
+	// Remove administrators, global mods, and moderators of the post's cid
+	uids = await Promise.all(uids.map(async (uid) => {
+		// Direct replies are a-ok.
+		if (uid === toPidUid) {
+			return uid;
+		}
+
+		const [isAdmin, isMod] = await Promise.all([
+			User.isAdministrator(uid),
+			User.isModerator(uid, cid),	// covers gmod as well
+		]);
+
+		return isAdmin || isMod ? false : uid;
+	}));
+
+	return uids.filter(Boolean);
+}
+
+/*
 	WebSocket methods
 */
 
@@ -406,5 +439,21 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 		callback(null, groups);
 	});
 };
+
+SocketPlugins.mentions.userSearch = async (socket, data) => {
+	// Transparently pass request through to socket user.search handler
+	const socketUser = require.main.require('./src/socket.io/user');
+	const result = await socketUser.search(socket, { query: data.query });
+
+	if (Mentions._settings.privilegedDirectReplies !== 'on') {
+		return result;
+	}
+
+	const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
+	const filteredUids = await filterPrivilegedUids(result.users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
+
+	result.users = result.users.filter((userObj) => filteredUids.includes(userObj.uid));
+	return result;
+}
 
 module.exports = Mentions;
