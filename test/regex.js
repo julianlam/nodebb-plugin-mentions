@@ -44,10 +44,6 @@ describe('regex', function () {
 		'@testUser.',
 		'@testUser\'s some text',
 	]
-	it('failed inside regex', function(done) {
-		assert(false);
-		done();
-	});
 	it('should match a mention in all strings', () => {
 		strings.forEach(string => {
 			const matches = string.match(matcher);
