@@ -6,7 +6,7 @@ $(document).ready(function() {
 	var groupList = [];
 	var localUserList = [];
 
-	$(window).on('composer:autocomplete:init', function(ev, data) {
+	$(window).on('composer:autocomplete:init chat:autocomplete:init', function(ev, data) {
 		localUserList = loadDomUsers();
 
 		if (!groupList.length) {
