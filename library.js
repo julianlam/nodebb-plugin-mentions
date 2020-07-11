@@ -421,6 +421,11 @@ async function filterPrivilegedUids (uids, cid, toPid) {
 	WebSocket methods
 */
 
+SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
+	const uids = await Topics.getUids(data.tid);
+	return await User.getUsernamesByUids(uids);
+};
+
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 	if (Mentions._settings.autofillGroups === 'off') {
 		return callback(null, []);

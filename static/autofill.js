@@ -7,7 +7,7 @@ $(document).ready(function() {
 	var localUserList = [];
 
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function(ev, data) {
-		localUserList = loadDomUsers();
+		loadTopicUsers(data.element);
 
 		if (!groupList.length) {
 			loadGroupList();
@@ -68,15 +68,22 @@ $(document).ready(function() {
 		composer.attr('data-mentions', '1');
 	});
 
-	function loadDomUsers() {
-		var DOMusers = [];
-		$('[component="post"][data-uid!="0"]').each(function(idx, el) {
-			var	username = el.getAttribute('data-username');
-			if (DOMusers.indexOf(username) === -1) {
-				DOMusers.push(username);
+	function loadTopicUsers(element) {
+		require(['composer'], function (composer) {
+			var composerEl = element.parents('.composer').get(0);
+			var uuid = composerEl.getAttribute('data-uuid');
+			var composerObj = composer.posts[uuid];
+
+			if (!composerObj.tid) {
+				return;
 			}
+
+			socket.emit('plugins.mentions.getTopicUsers', {
+				tid: composerObj.tid,
+			}, function (err, usernames) {
+				localUserList = usernames;
+			});
 		});
-		return DOMusers;
 	}
 
 	function loadGroupList() {
