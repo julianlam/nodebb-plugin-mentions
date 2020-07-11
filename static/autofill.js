@@ -75,6 +75,7 @@ $(document).ready(function() {
 			var composerObj = composer.posts[uuid];
 
 			if (!composerObj.tid) {
+				localUserList = [];
 				return;
 			}
 
