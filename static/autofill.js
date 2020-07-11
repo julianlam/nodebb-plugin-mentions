@@ -19,7 +19,7 @@ $(document).ready(function() {
 			search: function (term, callback) {
 				var usernames;
 				if (!term) {
-					usernames = localUserList.concat(groupList).filter(function(value, index, array) {
+					usernames = localUserList.filter(function(value, index, array) {
 						// Remove duplicates and calling user's username
 						return array.indexOf(value) === index && value !== app.user.username;
 					}).sort(function(a, b) {
@@ -48,7 +48,14 @@ $(document).ready(function() {
 							usernames.splice(usernames.indexOf(app.user.username), 1);
 						}
 
-						callback(usernames);
+						// Add groups that start with the search term
+						usernames = usernames.concat(groupList.filter(function (groupName) {
+							return groupName.toLocaleLowerCase().startsWith(term.toLocaleLowerCase());
+						}));
+
+						callback(usernames.sort(function(a, b) {
+							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
+						}));
 					});
 				});
 			},
