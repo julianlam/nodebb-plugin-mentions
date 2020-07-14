@@ -6,7 +6,9 @@ $(document).ready(function() {
 	var groupList = [];
 	var localUserList = [];
 
+	console.log('mentions adding listener');
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function(ev, data) {
+		console.log('listener fired');
 		loadTopicUsers(data.element);
 
 		if (!groupList.length) {
@@ -76,6 +78,7 @@ $(document).ready(function() {
 	});
 
 	function loadTopicUsers(element) {
+		console.log('in loadTopicUsers');
 		require(['composer'], function (composer) {
 			var composerEl = element.parents('.composer').get(0);
 			var uuid = composerEl.getAttribute('data-uuid');
@@ -89,6 +92,7 @@ $(document).ready(function() {
 			socket.emit('plugins.mentions.getTopicUsers', {
 				tid: composerObj.tid,
 			}, function (err, usernames) {
+				console.log('got topic users:', usernames);
 				localUserList = usernames;
 			});
 		});
