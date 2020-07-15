@@ -19,6 +19,7 @@ $(document).ready(function() {
 		var strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
+				console.log('searching', term);
 				var usernames;
 				if (!term) {
 					usernames = localUserList.filter(function(value, index, array) {
@@ -33,10 +34,12 @@ $(document).ready(function() {
 				// Get composer metadata
 				var uuid = data.options.className.match(/dropdown-(.+?)\s/)[1];
 				require(['composer'], function (composer) {
+					console.log('calling server with', term, uuid);
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
 						composerObj: composer.posts[uuid],
 					}, function(err, userdata) {
+						console.log('got stuff back', userdata);
 						if (err) {
 							return callback([]);
 						}
@@ -55,6 +58,7 @@ $(document).ready(function() {
 							return groupName.toLocaleLowerCase().startsWith(term.toLocaleLowerCase());
 						}));
 
+						console.log('results cb firing', usernames);
 						callback(usernames.sort(function(a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
 						}));
