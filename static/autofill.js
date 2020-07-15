@@ -25,6 +25,7 @@ $(document).ready(function() {
 					}).sort(function(a, b) {
 						return a.toLocaleLowerCase() > b.toLocaleLowerCase();
 					});
+
 					return callback(usernames);
 				}
 
