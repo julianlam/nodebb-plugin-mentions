@@ -454,10 +454,13 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 		return result;
 	}
 
-	const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
-	const filteredUids = await filterPrivilegedUids(result.users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
+	if (data.composerObj) {
+		const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
+		const filteredUids = await filterPrivilegedUids(result.users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
 
-	result.users = result.users.filter((userObj) => filteredUids.includes(userObj.uid));
+		result.users = result.users.filter((userObj) => filteredUids.includes(userObj.uid));
+	}
+
 	return result;
 }
 

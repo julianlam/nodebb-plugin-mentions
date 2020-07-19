@@ -30,7 +30,7 @@ $(document).ready(function() {
 				}
 
 				// Get composer metadata
-				var uuid = data.options.className.match(/dropdown-(.+?)\s/)[1];
+				var uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
 				require(['composer'], function (composer) {
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
@@ -79,6 +79,10 @@ $(document).ready(function() {
 	function loadTopicUsers(element) {
 		require(['composer'], function (composer) {
 			var composerEl = element.parents('.composer').get(0);
+			if (!composerEl) {
+				return;
+			}
+
 			var uuid = composerEl.getAttribute('data-uuid');
 			var composerObj = composer.posts[uuid];
 
