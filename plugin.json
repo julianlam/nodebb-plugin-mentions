@@ -12,7 +12,8 @@
 		{ "hook": "action:post.save", "method": "notify" },
 		{ "hook": "action:post.edit", "method": "notify" },
 		{ "hook": "filter:notifications.addFilters", "method": "addFilters" },
-		{ "hook": "filter:user.notificationTypes", "method": "notificationTypes" }
+		{ "hook": "filter:user.notificationTypes", "method": "notificationTypes" },
+		{ "hook": "filter:users.addFields", "method": "addFields" }
 	],
 	"scripts": [
 		"static/autofill.js"

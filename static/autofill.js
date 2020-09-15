@@ -17,7 +17,7 @@ $(document).ready(function() {
 		var strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
-				var usernames;
+				var usernames = [];
 				if (!term) {
 					usernames = localUserList.filter(function(value, index, array) {
 						// Remove duplicates and calling user's username
@@ -35,19 +35,19 @@ $(document).ready(function() {
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
 						composerObj: composer.posts[uuid],
-					}, function(err, userdata) {
+					}, function(err, users) {
 						if (err) {
 							return callback([]);
 						}
 
-						usernames = userdata.users.map(function(user) {
-							return user.username;
+						users.forEach(function (user) {
+							// Don't add current user to suggestions
+							if (app.user.username && app.user.username === user.username) {
+								return;
+							}
+							// Format suggestions as 'username (fullname)'
+							usernames.push(user.username + (user.fullname ? ' (' + user.fullname + ')' : ''));
 						});
-
-						// Remove current user from suggestions
-						if (app.user.username && usernames.indexOf(app.user.username) !== -1) {
-							usernames.splice(usernames.indexOf(app.user.username), 1);
-						}
 
 						// Add groups that start with the search term
 						usernames = usernames.concat(groupList.filter(function (groupName) {
@@ -62,6 +62,8 @@ $(document).ready(function() {
 			},
 			index: 1,
 			replace: function (mention) {
+				// Strip (fullname) part from mentions
+				mention = mention.replace(/ \(.+\)/, '');
 				mention = $('<div/>').html(mention).text();
 				return '@' + utils.slugify(mention, true) + ' ';
 			},

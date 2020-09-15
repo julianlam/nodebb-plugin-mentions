@@ -183,6 +183,11 @@ Mentions.notificationTypes = function (data, callback) {
 	callback(null, data);
 };
 
+Mentions.addFields = function (data, callback) {
+	data.fields.push('fullname');
+	callback(null, data);
+};
+
 function sendNotificationToUids(postData, uids, nidType, notificationText) {
 	if (!uids.length) {
 		return;
@@ -417,6 +422,11 @@ async function filterPrivilegedUids (uids, cid, toPid) {
 	return uids.filter(Boolean);
 }
 
+async function filterDisallowedFullnames (users) {
+	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
+	return users.filter((user, index) => userSettings[index].showfullname);
+}
+
 /*
 	WebSocket methods
 */
@@ -448,20 +458,40 @@ SocketPlugins.mentions.listGroups = function(socket, data, callback) {
 SocketPlugins.mentions.userSearch = async (socket, data) => {
 	// Transparently pass request through to socket user.search handler
 	const socketUser = require.main.require('./src/socket.io/user');
-	const result = await socketUser.search(socket, { query: data.query });
+
+	// Search for usernames
+	let usernameResult = await socketUser.search(socket, { query: data.query });
+	// Strip fullnames from username matches to separate username and fullname matches
+	usernameResult.users = usernameResult.users.map(userObj => {
+		userObj.fullname = null;
+		return userObj;
+	});
+
+	// Search for fullnames if they're not hidden globally
+	let fullnameResult = {users: []};
+	if (!Meta.config.hideFullname) {
+		fullnameResult = await socketUser.search(socket, {query: data.query, searchBy: 'fullname'});
+		// Hide results of users that do not allow their full name to be visible
+		fullnameResult.users = await filterDisallowedFullnames(fullnameResult.users);
+	}
+
+	// Merge results, filter duplicates (from username search, leave fullname results)
+	let users = usernameResult.users.filter(userObj =>
+		fullnameResult.users.filter(userObj2 => userObj.uid === userObj2.uid).length === 0
+	).concat(fullnameResult.users);
 
 	if (Mentions._settings.privilegedDirectReplies !== 'on') {
-		return result;
+		return users;
 	}
 
 	if (data.composerObj) {
 		const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
-		const filteredUids = await filterPrivilegedUids(result.users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
+		const filteredUids = await filterPrivilegedUids(users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
 
-		result.users = result.users.filter((userObj) => filteredUids.includes(userObj.uid));
+		users = users.filter((userObj) => filteredUids.includes(userObj.uid));
 	}
 
-	return result;
-}
+	return users;
+};
 
 module.exports = Mentions;
