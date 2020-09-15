@@ -423,12 +423,8 @@ async function filterPrivilegedUids (uids, cid, toPid) {
 }
 
 async function filterDisallowedFullnames (users) {
-	users = await Promise.all(users.map(async (user) => {
-		const userSettings = await User.getSettings(user.uid);
-		return userSettings.showfullname ? user : false;
-	}));
-
-	return users.filter(Boolean);
+	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
+	return users.filter((user, index) => userSettings[index].showfullname);
 }
 
 /*
