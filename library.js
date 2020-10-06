@@ -445,7 +445,11 @@ async function stripDisallowedFullnames (users) {
 
 SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
 	const uids = await Topics.getUids(data.tid);
-	return await User.getUsernamesByUids(uids);
+	const users =  await User.getUsers(uids);
+	if (Meta.config.hideFullname) {
+		return users;
+	}
+	return stripDisallowedFullnames(users);
 };
 
 SocketPlugins.mentions.listGroups = function(socket, data, callback) {
