@@ -184,7 +184,9 @@ Mentions.notificationTypes = function (data, callback) {
 };
 
 Mentions.addFields = function (data, callback) {
-	data.fields.push('fullname');
+	if (!Meta.config.hideFullname) {
+		data.fields.push('fullname');
+	}
 	callback(null, data);
 };
 
@@ -427,6 +429,16 @@ async function filterDisallowedFullnames (users) {
 	return users.filter((user, index) => userSettings[index].showfullname);
 }
 
+async function stripDisallowedFullnames (users) {
+	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
+	return users.map((user, index) => {
+		if (!userSettings[index].showfullname) {
+			user.fullname = null;
+		}
+		return user;
+	});
+}
+
 /*
 	WebSocket methods
 */
@@ -459,26 +471,23 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 	// Transparently pass request through to socket user.search handler
 	const socketUser = require.main.require('./src/socket.io/user');
 
-	// Search for usernames
-	let usernameResult = await socketUser.search(socket, { query: data.query });
-	// Strip fullnames from username matches to separate username and fullname matches
-	usernameResult.users = usernameResult.users.map(userObj => {
-		userObj.fullname = null;
-		return userObj;
-	});
+	// Search by username
+	let { users } = await socketUser.search(socket, { query: data.query });
 
-	// Search for fullnames if they're not hidden globally
-	let fullnameResult = {users: []};
 	if (!Meta.config.hideFullname) {
-		fullnameResult = await socketUser.search(socket, {query: data.query, searchBy: 'fullname'});
-		// Hide results of users that do not allow their full name to be visible
-		fullnameResult.users = await filterDisallowedFullnames(fullnameResult.users);
-	}
+		// Strip fullnames of users that do not allow their full name to be visible
+		users = await stripDisallowedFullnames(users);
 
-	// Merge results, filter duplicates (from username search, leave fullname results)
-	let users = usernameResult.users.filter(userObj =>
-		fullnameResult.users.filter(userObj2 => userObj.uid === userObj2.uid).length === 0
-	).concat(fullnameResult.users);
+		// Search by fullname
+		let { users: fullnameUsers } = await socketUser.search(socket, {query: data.query, searchBy: 'fullname'});
+		// Hide results of users that do not allow their full name to be visible (prevents "enumeration attack")
+		fullnameUsers = await filterDisallowedFullnames(fullnameUsers);
+
+		// Merge results, filter duplicates (from username search, leave fullname results)
+		users = users.filter(userObj =>
+			fullnameUsers.filter(userObj2 => userObj.uid === userObj2.uid).length === 0
+		).concat(fullnameUsers);
+	}
 
 	if (Mentions._settings.privilegedDirectReplies !== 'on') {
 		return users;
