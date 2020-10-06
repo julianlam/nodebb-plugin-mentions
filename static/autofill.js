@@ -17,21 +17,15 @@ $(document).ready(function() {
 		var strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
-				var usernames = [];
-				if (!term) {
-					usernames = localUserList.filter(function(value, index, array) {
-						// Remove duplicates and calling user's username
-						return array.indexOf(value) === index && value !== app.user.username;
-					}).sort(function(a, b) {
-						return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-					});
-
-					return callback(usernames);
-				}
-
-				// Get composer metadata
-				var uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
 				require(['composer', 'helpers'], function (composer, helpers) {
+					var mentions = [];
+					if (!term) {
+						mentions = usersToMentions(sortUsers(localUserList), helpers);
+						return callback(mentions);
+					}
+
+					// Get composer metadata
+					var uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
 						composerObj: composer.posts[uuid],
@@ -40,25 +34,18 @@ $(document).ready(function() {
 							return callback([]);
 						}
 
-						users.forEach(function (user) {
-							// Don't add current user to suggestions
-							if (app.user.username && app.user.username === user.username) {
-								return;
-							}
-							// Format suggestions as 'avatar username (fullname)'
-							var avatar = helpers.buildAvatar(user, 'sm');
-							var fullname = user.fullname ? '(' + user.fullname + ')' : '';
-							usernames.push(avatar + ' ' + user.username + ' ' + fullname);
-						});
+						mentions = mentions.concat(usersToMentions(sortUsers(users), helpers));
 
 						// Add groups that start with the search term
-						usernames = usernames.concat(groupList.filter(function (groupName) {
+						var groupMentions = groupList.filter(function (groupName) {
 							return groupName.toLocaleLowerCase().startsWith(term.toLocaleLowerCase());
-						}));
+						}).sort(function(a, b) {
+							return a.toLocaleLowerCase() > b.toLocaleLowerCase() ? 1 : -1;
+						});
+						// Add group mentions at the bottom of dropdown
+						mentions = mentions.concat(groupMentions);
 
-						callback(usernames.sort(function(a, b) {
-							return a.toLocaleLowerCase() > b.toLocaleLowerCase();
-						}));
+						callback(mentions);
 					});
 				});
 			},
@@ -66,8 +53,10 @@ $(document).ready(function() {
 			replace: function (mention) {
 				// Strip (fullname) part from mentions
 				mention = mention.replace(/ \(.+\)/, '');
-				mention = $('<div/>').html(mention).text();
-				return '@' + utils.slugify(mention, true) + ' ';
+				mention = $('<div/>').html(mention);
+				// Strip letter avatar
+				mention.find('span').remove();
+				return '@' + utils.slugify(mention.text(), true) + ' ';
 			},
 			cache: true
 		};
@@ -79,6 +68,28 @@ $(document).ready(function() {
 		var composer = $('#cmp-uuid-' + data.post_uuid + ' .write');
 		composer.attr('data-mentions', '1');
 	});
+
+	function sortUsers (users) {
+		return users.sort(function (user1, user2) {
+			return user1.username.toLocaleLowerCase() > user2.username.toLocaleLowerCase() ? 1 : -1;
+		});
+	}
+
+	function usersToMentions (users, helpers) {
+		return users.reduce(function (carry, user) {
+			// Don't add current user to suggestions
+			if (app.user.username && app.user.username === user.username) {
+				return carry;
+			}
+
+			// Format suggestions as 'avatar username (fullname)'
+			var avatar = helpers.buildAvatar(user, 'sm');
+			var fullname = user.fullname ? '(' + user.fullname + ')' : '';
+			carry.push(avatar + ' ' + user.username + ' ' + fullname);
+
+			return carry;
+		}, []);
+	}
 
 	function loadTopicUsers(element) {
 		require(['composer'], function (composer) {
@@ -97,8 +108,8 @@ $(document).ready(function() {
 
 			socket.emit('plugins.mentions.getTopicUsers', {
 				tid: composerObj.tid,
-			}, function (err, usernames) {
-				localUserList = usernames;
+			}, function (err, users) {
+				localUserList = users;
 			});
 		});
 	}
