@@ -31,7 +31,7 @@ $(document).ready(function() {
 
 				// Get composer metadata
 				var uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
-				require(['composer'], function (composer) {
+				require(['composer', 'helpers'], function (composer, helpers) {
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
 						composerObj: composer.posts[uuid],
@@ -45,8 +45,10 @@ $(document).ready(function() {
 							if (app.user.username && app.user.username === user.username) {
 								return;
 							}
-							// Format suggestions as 'username (fullname)'
-							usernames.push(user.username + (user.fullname ? ' (' + user.fullname + ')' : ''));
+							// Format suggestions as 'avatar username (fullname)'
+							var avatar = helpers.buildAvatar(user, 'sm');
+							var fullname = user.fullname ? '(' + user.fullname + ')' : '';
+							usernames.push(avatar + ' ' + user.username + ' ' + fullname);
 						});
 
 						// Add groups that start with the search term
