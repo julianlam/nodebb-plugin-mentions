@@ -1,5 +1,5 @@
 "use strict";
-/* globals socket, app, utils */
+/* globals socket, app */
 
 
 $(document).ready(function() {
@@ -13,11 +13,12 @@ $(document).ready(function() {
 			loadGroupList();
 		}
 
-		var subset;
+		var slugify;
 		var strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
-				require(['composer', 'helpers'], function (composer, helpers) {
+				require(['composer', 'helpers', 'slugify'], function (composer, helpers, _slugify) {
+					slugify = _slugify;
 					var mentions = [];
 					if (!term) {
 						mentions = usersToMentions(sortUsers(localUserList), helpers);
@@ -56,7 +57,7 @@ $(document).ready(function() {
 				mention = $('<div/>').html(mention);
 				// Strip letter avatar
 				mention.find('span').remove();
-				return '@' + utils.slugify(mention.text(), true) + ' ';
+				return '@' + slugify(mention.text(), true) + ' ';
 			},
 			cache: true
 		};

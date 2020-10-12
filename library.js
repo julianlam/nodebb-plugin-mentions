@@ -14,7 +14,7 @@ var Groups = require.main.require('./src/groups');
 var Notifications = require.main.require('./src/notifications');
 var Privileges = require.main.require('./src/privileges');
 var Meta = require.main.require('./src/meta');
-var Utils = require.main.require('./src/utils');
+var slugify = require.main.require('./src/slugify');
 var batch = require.main.require('./src/batch');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
@@ -86,7 +86,7 @@ Mentions.notify = function(data) {
 	var noMentionGroups = getNoMentionGroups();
 
 	matches = matches.map(function(match) {
-		return Utils.slugify(match);
+		return slugify(match);
 	}).filter(function(match, index, array) {
 		return match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1;
 	});
@@ -328,7 +328,7 @@ Mentions.parseRaw = function(content, callback) {
 	});
 
 	async.each(matches, function(match, next) {
-		var slug = Utils.slugify(match.slice(1));
+		var slug = slugify(match.slice(1));
 
 		match = removePunctuationSuffix(match);
 
