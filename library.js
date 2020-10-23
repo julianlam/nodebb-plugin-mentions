@@ -264,7 +264,8 @@ function createNotification(postData, nidType, notificationText, callback) {
 		tid: postData.tid,
 		from: postData.uid,
 		path: '/post/' + postData.pid,
-		importance: 6
+		importance: 6,
+		mergeId: 'notifications:user_posted_to|' + postData.tid,
 	}, callback);
 }
 
