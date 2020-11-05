@@ -16,6 +16,7 @@ var Privileges = require.main.require('./src/privileges');
 var Meta = require.main.require('./src/meta');
 var slugify = require.main.require('./src/slugify');
 var batch = require.main.require('./src/batch');
+const utils = require.main.require('./src/utils');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
 
@@ -255,18 +256,27 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 }
 
 function createNotification(postData, nidType, notificationText, callback) {
-	Notifications.create({
-		type: 'mention',
-		bodyShort: notificationText,
-		bodyLong: postData.content,
-		nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid + ':' + nidType,
-		pid: postData.pid,
-		tid: postData.tid,
-		from: postData.uid,
-		path: '/post/' + postData.pid,
-		importance: 6,
-		mergeId: 'notifications:user_posted_to|' + postData.tid,
-	}, callback);
+	Topics.getTopicField(postData.tid, 'title', function (err, title) {
+		if (err) {
+			return callback(err);
+		}
+		if (title) {
+			title = utils.decodeHTMLEntities(title);
+		}
+		Notifications.create({
+			type: 'mention',
+			bodyShort: notificationText,
+			bodyLong: postData.content,
+			nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid + ':' + nidType,
+			pid: postData.pid,
+			tid: postData.tid,
+			from: postData.uid,
+			path: '/post/' + postData.pid,
+			topicTitle: title,
+			importance: 6,
+			mergeId: 'notifications:user_posted_to|' + postData.tid,
+		}, callback);
+	});
 }
 
 function getGroupMemberUids(groupRecipients, callback) {
