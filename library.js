@@ -7,6 +7,7 @@ var validator = require('validator');
 var nconf = module.parent.require('nconf');
 
 var db = require.main.require('./src/database');
+var api = require.main.require('./src/api');
 var Topics = require.main.require('./src/topics');
 var posts = require.main.require('./src/posts');
 var User = require.main.require('./src/user');
@@ -487,14 +488,14 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 	const socketUser = require.main.require('./src/socket.io/user');
 
 	// Search by username
-	let { users } = await socketUser.search(socket, { query: data.query });
+	let { users } = await api.users.search(socket, data);
 
 	if (!Meta.config.hideFullname) {
 		// Strip fullnames of users that do not allow their full name to be visible
 		users = await stripDisallowedFullnames(users);
 
 		// Search by fullname
-		let { users: fullnameUsers } = await socketUser.search(socket, {query: data.query, searchBy: 'fullname'});
+		let { users: fullnameUsers } = await api.users.search(socket, {query: data.query, searchBy: 'fullname'});
 		// Hide results of users that do not allow their full name to be visible (prevents "enumeration attack")
 		fullnameUsers = await filterDisallowedFullnames(fullnameUsers);
 
