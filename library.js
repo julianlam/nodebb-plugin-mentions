@@ -275,7 +275,6 @@ function createNotification(postData, nidType, notificationText, callback) {
 			path: '/post/' + postData.pid,
 			topicTitle: title,
 			importance: 6,
-			mergeId: 'notifications:user_posted_to|' + postData.tid,
 		}, callback);
 	});
 }
