@@ -1,3 +1,4 @@
 {
-    "user_mentioned_you_in": "<strong>%1</strong> در \n<strong>%1</strong> mentioned you in <strong>%2</strong> از شما نام برده"
+	"user_mentioned_you_in": "<strong>%1</strong> شما رو در <strong>%2</strong> منشن کرده",
+	"user_mentioned_group_in": "<strong>%1</strong> گروه <strong>%2</strong> رو در <strong>%3</strong> منشن کرده"
 }
