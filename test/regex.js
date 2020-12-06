@@ -2,34 +2,8 @@ const assert = require('assert');
 const XRegExp = require('xregexp');
 const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
 
-// from NodeBB utils.js
-const utils = {
-	slugify: function (str, preserveCase) {
-		if (!str) {
-			return '';
-		}
-		str = str.replace(utils.trimRegex, '');
-		if (utils.isLatin.test(str)) {
-			str = str.replace(utils.invalidLatinChars, '-');
-		} else {
-			str = XRegExp.replace(str, utils.invalidUnicodeChars, '-');
-		}
-		str = !preserveCase ? str.toLocaleLowerCase() : str;
-		str = str.replace(utils.collapseWhitespace, '-');
-		str = str.replace(utils.collapseDash, '-');
-		str = str.replace(utils.trimTrailingDash, '');
-		str = str.replace(utils.trimLeadingDash, '');
-		return str;
-	},
-	invalidUnicodeChars: XRegExp('[^\\p{L}\\s\\d\\-_]', 'g'),
-	invalidLatinChars: /[^\w\s\d\-_]/g,
-	trimRegex: /^\s+|\s+$/g,
-	collapseWhitespace: /\s+/g,
-	collapseDash: /-+/g,
-	trimTrailingDash: /-$/g,
-	trimLeadingDash: /^-/g,
-	isLatin: /^[\w\d\s.,\-@]+$/,
-};
+// use core slugify module
+const slugify = require.main.require('./src/slugify');
 
 describe('regex', function () {
 	const matcher = new RegExp(regex);
@@ -48,7 +22,7 @@ describe('regex', function () {
 		strings.forEach(string => {
 			const matches = string.match(matcher);
 			assert(matches);
-			assert.equal(utils.slugify(matches[0]), 'testuser');
+			assert.equal(slugify(matches[0]), 'testuser');
 		});
 	});
 
