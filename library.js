@@ -14,6 +14,7 @@ var User = require.main.require('./src/user');
 var Groups = require.main.require('./src/groups');
 var Notifications = require.main.require('./src/notifications');
 var Privileges = require.main.require('./src/privileges');
+var plugins = require.main.require('./src/plugins');
 var Meta = require.main.require('./src/meta');
 var slugify = require.main.require('./src/slugify');
 var batch = require.main.require('./src/batch');
@@ -248,6 +249,7 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		}
 
 		if (notification && filteredUids.length) {
+			plugins.hooks.fire('action:mentions.notify', { notification, uids: filteredUids });
 			Notifications.push(notification, filteredUids, function () {
 				const dates = filteredUids.map(() => Date.now());
 				db.sortedSetAdd('mentions:sent:' + postData.pid, dates, filteredUids);
