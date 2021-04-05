@@ -1,0 +1,6 @@
+{
+	"mentions": "Megemlítések",
+	"user_mentioned_you_in": "<strong>%1</strong> megemlített téged itt: <strong>%2</strong>",
+	"user_mentioned_group_in": "<strong>%1</strong> megemlítette <strong>%2</strong>-t itt: <strong>%3</strong>",
+	"notificationType_mention": "Amikor valaki megemlít téged"
+}
