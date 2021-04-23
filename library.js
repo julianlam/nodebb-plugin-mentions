@@ -18,7 +18,7 @@ var plugins = require.main.require('./src/plugins');
 var Meta = require.main.require('./src/meta');
 var slugify = require.main.require('./src/slugify');
 var batch = require.main.require('./src/batch');
-const utils = require.main.require('./src/utils');
+const utils = require.main.require('./public/src/utils');
 
 var SocketPlugins = require.main.require('./src/socket.io/plugins');
 
@@ -299,23 +299,18 @@ function getGroupMemberUids(groupRecipients, callback) {
 	});
 }
 
-Mentions.parsePost = function(data, callback) {
+Mentions.parsePost = async (data) => {
 	if (!data || !data.postData || !data.postData.content) {
-		return callback(null, data);
+		return data;
 	}
 
-	Mentions.parseRaw(data.postData.content, function(err, content) {
-		if (err) {
-			return callback(err);
-		}
-
-		data.postData.content = content;
-		callback(null, data);
-	});
+	const parsed = await Mentions.parseRaw(data.postData.content);
+	data.postData.content = parsed;
+	return data;
 };
 
-Mentions.parseRaw = function(content, callback) {
-	var splitContent = utility.split(content, false, false, true);
+Mentions.parseRaw = async (content) => {
+	let splitContent = utility.split(content, false, false, true);
 	var matches = [];
 	splitContent.forEach(function(cleanedContent, i) {
 		if ((i & 1) === 0) {
@@ -324,7 +319,7 @@ Mentions.parseRaw = function(content, callback) {
 	});
 
 	if (!matches.length) {
-		return callback(null, content);
+		return content;
 	}
 
 	matches = matches.filter(function(cur, idx) {
@@ -340,65 +335,56 @@ Mentions.parseRaw = function(content, callback) {
 		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
-	async.each(matches, function(match, next) {
+	await Promise.all(matches.map(async (match) => {
 		var slug = slugify(match.slice(1));
-
 		match = removePunctuationSuffix(match);
 
-		async.parallel({
-			groupExists: async.apply(Groups.existsBySlug, slug),
-			user: async () => {
-				const uid = await User.getUidByUserslug(slug);
-				return await User.getUserFields(uid, ['uid', 'username', 'fullname']);
-			},
-		}, function(err, results) {
-			if (err) {
-				return next(err);
-			}
-
-			if (results.user.uid || results.groupExists) {
-				var regex = isLatinMention.test(match)
-					? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
-					: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
-
-				let skip = false;
-
-				splitContent = splitContent.map(function(c, i) {
-					// *Might* not be needed anymore? Check pls...
-					if (skip || (i & 1) === 1) {
-						skip = c === '<code>';	// if code block detected, skip the content inside of it
-						return c;
-					}
-					return c.replace(regex, function(match) {
-						// Again, cleaning up lookaround leftover bits
-						var atIndex = match.indexOf('@');
-						var plain = match.slice(0, atIndex);
-						match = match.slice(atIndex);
-						if (results.user.uid) {
-							switch (Mentions._settings.display) {
-								case 'fullname':
-									match = results.user.fullname || match;
-									break;
-								case 'username':
-									match = results.user.username;
-									break;
-							}
-						}
-
-						var str = results.user.uid
-								? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.user.uid + '">' + match + '</a>'
-								: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
-
-						return plain + str;
-					});
-				});
-			}
-
-			next();
+		const uid = await User.getUidByUserslug(slug);
+		const results = await utils.promiseParallel({
+			groupExists: Groups.existsBySlug(slug),
+			user: User.getUserFields(uid, ['uid', 'username', 'fullname']),
 		});
-	}, function(err) {
-		callback(err, splitContent.join(''));
-	});
+
+		if (results.user.uid || results.groupExists) {
+			var regex = isLatinMention.test(match)
+				? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
+				: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
+
+			let skip = false;
+
+			splitContent = splitContent.map(function(c, i) {
+				// *Might* not be needed anymore? Check pls...
+				if (skip || (i & 1) === 1) {
+					skip = c === '<code>';	// if code block detected, skip the content inside of it
+					return c;
+				}
+				return c.replace(regex, function(match) {
+					// Again, cleaning up lookaround leftover bits
+					var atIndex = match.indexOf('@');
+					var plain = match.slice(0, atIndex);
+					match = match.slice(atIndex);
+					if (results.user.uid) {
+						switch (Mentions._settings.display) {
+							case 'fullname':
+								match = results.user.fullname || match;
+								break;
+							case 'username':
+								match = results.user.username;
+								break;
+						}
+					}
+
+					var str = results.user.uid
+							? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.user.uid + '">' + match + '</a>'
+							: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+
+					return plain + str;
+				});
+			});
+		}
+	}));
+
+	return splitContent.join('');
 };
 
 Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
