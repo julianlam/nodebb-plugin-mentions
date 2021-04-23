@@ -44,7 +44,7 @@ var Mentions = {
 };
 SocketPlugins.mentions = {};
 
-Mentions.init = function (data, callback) {
+Mentions.init = async (data) => {
 	var hostMiddleware = require.main.require('./src/middleware');
 	var controllers = require('./controllers');
 
@@ -52,19 +52,16 @@ Mentions.init = function (data, callback) {
 	data.router.get('/api/admin/plugins/mentions', controllers.renderAdminPage);
 
 	// Retrieve settings
-	Meta.settings.get('mentions', function (err, settings) {
-		Object.assign(Mentions._settings, Mentions._defaults, settings);
-		callback();
-	});
+	Object.assign(Mentions._settings, Mentions._defaults, await Meta.settings.get('mentions'));
 };
 
-Mentions.addAdminNavigation = function (header, callback) {
+Mentions.addAdminNavigation = async (header) => {
 	header.plugins.push({
 		route: '/plugins/mentions',
 		name: 'Mentions'
 	});
 
-	callback(null, header);
+	return header;
 };
 
 function getNoMentionGroups() {
@@ -176,21 +173,21 @@ Mentions.notify = function(data) {
 	});
 };
 
-Mentions.addFilters = function (data, callback) {
+Mentions.addFilters = async (data) => {
 	data.regularFilters.push({ name: '[[notifications:mentions]]', filter: 'mention' });
-	callback(null, data);
+	return data;
 };
 
-Mentions.notificationTypes = function (data, callback) {
+Mentions.notificationTypes = async (data) => {
 	data.types.push('notificationType_mention');
-	callback(null, data);
+	return data;
 };
 
-Mentions.addFields = function (data, callback) {
+Mentions.addFields = async (data) => {
 	if (!Meta.config.hideFullname) {
 		data.fields.push('fullname');
 	}
-	callback(null, data);
+	return data;
 };
 
 function sendNotificationToUids(postData, uids, nidType, notificationText) {
