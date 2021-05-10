@@ -3,8 +3,8 @@
 
 
 $(document).ready(function() {
-	var groupList = [];
-	var localUserList = [];
+	let groupList = [];
+	let localUserList = [];
 
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function(ev, data) {
 		loadTopicUsers(data.element);
@@ -13,20 +13,20 @@ $(document).ready(function() {
 			loadGroupList();
 		}
 
-		var slugify;
-		var strategy = {
+		let slugify;
+		const strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
 				require(['composer', 'helpers', 'slugify'], function (composer, helpers, _slugify) {
 					slugify = _slugify;
-					var mentions = [];
+					let mentions = [];
 					if (!term) {
 						mentions = usersToMentions(sortUsers(localUserList), helpers);
 						return callback(mentions);
 					}
 
 					// Get composer metadata
-					var uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
+					const uuid = data.options.className && data.options.className.match(/dropdown-(.+?)\s/)[1];
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
 						composerObj: composer.posts[uuid],
@@ -38,7 +38,7 @@ $(document).ready(function() {
 						mentions = mentions.concat(usersToMentions(sortUsers(users), helpers));
 
 						// Add groups that start with the search term
-						var groupMentions = groupList.filter(function (groupName) {
+						const groupMentions = groupList.filter(function (groupName) {
 							return groupName.toLocaleLowerCase().startsWith(term.toLocaleLowerCase());
 						}).sort(function(a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase() ? 1 : -1;
@@ -66,7 +66,7 @@ $(document).ready(function() {
 	});
 
 	$(window).on('action:composer.loaded', function(e, data) {
-		var composer = $('#cmp-uuid-' + data.post_uuid + ' .write');
+		const composer = $('#cmp-uuid-' + data.post_uuid + ' .write');
 		composer.attr('data-mentions', '1');
 	});
 
@@ -84,9 +84,9 @@ $(document).ready(function() {
 			}
 
 			// Format suggestions as 'avatar username (fullname)'
-			var avatar = helpers.buildAvatar(user, 'sm');
-			var fullname = user.fullname ? '(' + user.fullname + ')' : '';
-			carry.push(avatar + ' ' + user.username + ' ' + fullname);
+			const avatar = helpers.buildAvatar(user, 'sm');
+			const fullname = user.fullname ? `(${user.fullname})` : '';
+			carry.push(`${avatar} ${user.username} ${helpers.escape(fullname)}`);
 
 			return carry;
 		}, []);
@@ -94,13 +94,13 @@ $(document).ready(function() {
 
 	function loadTopicUsers(element) {
 		require(['composer'], function (composer) {
-			var composerEl = element.parents('.composer').get(0);
+			const composerEl = element.parents('.composer').get(0);
 			if (!composerEl) {
 				return;
 			}
 
-			var uuid = composerEl.getAttribute('data-uuid');
-			var composerObj = composer.posts[uuid];
+			const uuid = composerEl.getAttribute('data-uuid');
+			const composerObj = composer.posts[uuid];
 
 			if (!composerObj.tid) {
 				localUserList = [];
