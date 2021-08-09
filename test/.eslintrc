@@ -1,0 +1,6 @@
+{
+  "extends": "nodebb/lib",
+  "env": {
+    "mocha": true
+  }
+}

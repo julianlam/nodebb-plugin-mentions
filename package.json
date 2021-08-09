@@ -4,7 +4,7 @@
   "description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their username",
   "main": "library.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
@@ -31,6 +31,9 @@
     "xregexp": "^3.2.0"
   },
   "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-nodebb": "^0.0.1",
+    "eslint-plugin-import": "^2.24.0",
     "mocha": "^8.3.2"
   }
 }
