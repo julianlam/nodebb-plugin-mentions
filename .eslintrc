@@ -1,3 +1,6 @@
 {
-  "extends": "nodebb/lib"
+  "extends": "nodebb/lib",
+  "rules": {
+    "no-bitwise": "warn"
+  }
 }

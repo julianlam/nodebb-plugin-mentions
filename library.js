@@ -1,6 +1,6 @@
 'use strict';
 
-const	async = require('async');
+const async = require('async');
 const validator = require('validator');
 
 const { sendNotificationToUids } = require('./lib/notifications');
@@ -23,9 +23,8 @@ const Mentions = {
 		display: '',
 	},
 };
-SocketPlugins.mentions = {};
 
-Mentions.init = async (data) => {
+Mentions.init = async function (data) {
 	const hostMiddleware = require.main.require('./src/middleware');
 	const controllers = require('./lib/controllers');
 
@@ -36,15 +35,13 @@ Mentions.init = async (data) => {
 	Object.assign(Mentions._settings, Mentions._defaults, await Meta.settings.get('mentions'));
 };
 
-Mentions.addAdminNavigation = async (header) => {
+Mentions.addAdminNavigation = async function (header) {
 	header.plugins.push({
 		route: '/plugins/mentions',
 		name: 'Mentions',
 	});
-
 	return header;
 };
-
 
 Mentions.notify = function (data) {
 	const postData = data.post;
@@ -57,7 +54,9 @@ Mentions.notify = function (data) {
 
 	const noMentionGroups = utility.getNoMentionGroups(Mentions._settings);
 
-	matches = matches.map(match => slugify(match)).filter((match, index, array) => match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1);
+	matches = matches
+		.map(match => slugify(match))
+		.filter((match, index, array) => match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1);
 
 	if (!matches.length) {
 		return;
@@ -109,7 +108,10 @@ Mentions.notify = function (data) {
 			const title = utility.decodeString(results.topic.title);
 			const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
-			let uids = results.uids.filter((uid, index, array) => array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString()));
+			let uids = results.uids
+				.filter((uid, index, array) => array.indexOf(uid) === index &&
+					parseInt(uid, 10) !== parseInt(postData.uid, 10) &&
+					!results.topicFollowers.includes(uid.toString()));
 
 			if (Mentions._settings.privilegedDirectReplies === 'on') {
 				const toPid = await posts.getPostField(data.post.pid, 'toPid');
@@ -139,24 +141,24 @@ Mentions.notify = function (data) {
 	});
 };
 
-Mentions.addFilters = async (data) => {
+Mentions.addFilters = async function (data) {
 	data.regularFilters.push({ name: '[[notifications:mentions]]', filter: 'mention' });
 	return data;
 };
 
-Mentions.notificationTypes = async (data) => {
+Mentions.notificationTypes = async function (data) {
 	data.types.push('notificationType_mention');
 	return data;
 };
 
-Mentions.addFields = async (data) => {
+Mentions.addFields = async function (data) {
 	if (!Meta.config.hideFullname) {
 		data.fields.push('fullname');
 	}
 	return data;
 };
 
-Mentions.parsePost = async (data) => {
+Mentions.parsePost = async function (data) {
 	if (!data || !data.postData || !data.postData.content) {
 		return data;
 	}
@@ -166,7 +168,7 @@ Mentions.parsePost = async (data) => {
 	return data;
 };
 
-Mentions.parseRaw = async (content) => {
+Mentions.parseRaw = async function (content) {
 	let splitContent = utility.split(content, false, false, true);
 	let matches = [];
 	splitContent.forEach((cleanedContent, i) => {
@@ -179,17 +181,17 @@ Mentions.parseRaw = async (content) => {
 		return content;
 	}
 
-	matches = matches.filter((cur, idx) =>
-		// Eliminate duplicates
-		 idx === matches.indexOf(cur)).map((match) => {
-		/**
-		 *	Javascript-favour of regex does not support lookaround,
-		 *	so need to clean up the cruft by discarding everthing
-		 *	before the @
-		 */
-		const atIndex = match.indexOf('@');
-		return atIndex !== 0 ? match.slice(atIndex) : match;
-	});
+	matches = matches
+		.filter((cur, idx) => idx === matches.indexOf(cur)) // Eliminate duplicates
+		.map((match) => {
+			/**
+			 *	Javascript-favour of regex does not support lookaround,
+			 *	so need to clean up the cruft by discarding everthing
+			 *	before the @
+			 */
+			const atIndex = match.indexOf('@');
+			return atIndex !== 0 ? match.slice(atIndex) : match;
+		});
 
 	await Promise.all(matches.map(async (match) => {
 		const slug = slugify(match.slice(1));
@@ -203,8 +205,8 @@ Mentions.parseRaw = async (content) => {
 
 		if (results.user.uid || results.groupExists) {
 			const regex = utility.isLatinMention.test(match) ?
-				new RegExp(`(?:^|\\s|\>|;)${match}\\b`, 'g') :
-				new RegExp(`(?:^|\\s|\>|;)${match}`, 'g');
+				new RegExp(`(?:^|\\s|>|;)${match}\\b`, 'g') :
+				new RegExp(`(?:^|\\s|>|;)${match}`, 'g');
 
 			let skip = false;
 
@@ -244,19 +246,17 @@ Mentions.parseRaw = async (content) => {
 };
 
 Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
-	let split = utility.split(input, isMarkdown, stripBlockquote, stripCode);
-	split = split.filter((e, i) =>
-		// only keep non-code/non-blockquote
-		 (i & 1) === 0);
-	return split.join('');
+	return utility.split(input, isMarkdown, stripBlockquote, stripCode)
+		.filter((_, i) => (i & 1) === 0) // only keep non-code/non-blockquote
+		.join('');
 };
 
 
 /*
 	WebSocket methods
 */
-
-SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
+SocketPlugins.mentions = {};
+SocketPlugins.mentions.getTopicUsers = async function (socket, data) {
 	const uids = await Topics.getUids(data.tid);
 	const users = await User.getUsers(uids);
 	if (Meta.config.hideFullname) {
@@ -265,25 +265,20 @@ SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
 	return stripDisallowedFullnames(users);
 };
 
-SocketPlugins.mentions.listGroups = function (socket, data, callback) {
+SocketPlugins.mentions.listGroups = async function () {
 	if (Mentions._settings.autofillGroups === 'off') {
-		return callback(null, []);
+		return [];
 	}
 
-	Groups.getGroups('groups:visible:createtime', 0, -1, (err, groups) => {
-		if (err) {
-			return callback(err);
-		}
-		const noMentionGroups = utility.getNoMentionGroups();
-		groups = groups.filter(groupName => groupName && !noMentionGroups.includes(groupName)).map(groupName => validator.escape(groupName));
-		callback(null, groups);
-	});
+	const groups = await Groups.getGroups('groups:visible:createtime', 0, -1);
+	const noMentionGroups = utility.getNoMentionGroups(Mentions._settings);
+
+	return groups
+		.filter(groupName => groupName && !noMentionGroups.includes(groupName))
+		.map(groupName => validator.escape(groupName));
 };
 
-SocketPlugins.mentions.userSearch = async (socket, data) => {
-	// Transparently pass request through to socket user.search handler
-	const socketUser = require.main.require('./src/socket.io/user');
-
+SocketPlugins.mentions.userSearch = async function (socket, data) {
 	// Search by username
 	let { users } = await api.users.search(socket, data);
 
@@ -297,7 +292,9 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 		fullnameUsers = await filterDisallowedFullnames(fullnameUsers);
 
 		// Merge results, filter duplicates (from username search, leave fullname results)
-		users = users.filter(userObj => fullnameUsers.filter(userObj2 => userObj.uid === userObj2.uid).length === 0).concat(fullnameUsers);
+		users = users
+			.filter(userObj => fullnameUsers.filter(userObj2 => userObj.uid === userObj2.uid).length === 0)
+			.concat(fullnameUsers);
 	}
 
 	if (Mentions._settings.privilegedDirectReplies !== 'on') {
