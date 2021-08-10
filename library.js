@@ -1,9 +1,7 @@
 'use strict';
 
 const	async = require('async');
-const Entities = require('html-entities').XmlEntities;
 const validator = require('validator');
-const XRegExp = require('xregexp');
 
 const {
 	nconf, winston,
@@ -11,14 +9,6 @@ const {
 	slugify, SocketPlugins, Topics, User, utils,
 } = require('./lib/nodebb');
 const utility = require('./lib/utility');
-
-
-const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
-const isLatinMention = /@[\w\d\-_.]+$/;
-const removePunctuationSuffix = function (string) {
-	return string.replace(/[!?.]*$/, '');
-};
-const entities = new Entities();
 
 
 const Mentions = {
@@ -53,26 +43,17 @@ Mentions.addAdminNavigation = async (header) => {
 	return header;
 };
 
-function getNoMentionGroups() {
-	let noMentionGroups = ['registered-users', 'guests'];
-	try {
-		noMentionGroups = noMentionGroups.concat(JSON.parse(Mentions._settings.disableGroupMentions));
-	} catch (err) {
-		winston.error(err);
-	}
-	return noMentionGroups;
-}
 
 Mentions.notify = function (data) {
 	const postData = data.post;
 	const cleanedContent = Mentions.clean(postData.content, true, true, true);
-	let matches = cleanedContent.match(regex);
+	let matches = cleanedContent.match(utility.regex);
 
 	if (!matches) {
 		return;
 	}
 
-	const noMentionGroups = getNoMentionGroups();
+	const noMentionGroups = utility.getNoMentionGroups(Mentions._settings);
 
 	matches = matches.map(match => slugify(match)).filter((match, index, array) => match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1);
 
@@ -123,7 +104,7 @@ Mentions.notify = function (data) {
 				return;
 			}
 
-			const title = entities.decode(results.topic.title);
+			const title = utility.decodeString(results.topic.title);
 			const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 			let uids = results.uids.filter((uid, index, array) => array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString()));
@@ -294,7 +275,7 @@ Mentions.parseRaw = async (content) => {
 	let matches = [];
 	splitContent.forEach((cleanedContent, i) => {
 		if ((i & 1) === 0) {
-			matches = matches.concat(cleanedContent.match(regex) || []);
+			matches = matches.concat(cleanedContent.match(utility.regex) || []);
 		}
 	});
 
@@ -316,7 +297,7 @@ Mentions.parseRaw = async (content) => {
 
 	await Promise.all(matches.map(async (match) => {
 		const slug = slugify(match.slice(1));
-		match = removePunctuationSuffix(match);
+		match = utility.removePunctuationSuffix(match);
 
 		const uid = await User.getUidByUserslug(slug);
 		const results = await utils.promiseParallel({
@@ -325,7 +306,7 @@ Mentions.parseRaw = async (content) => {
 		});
 
 		if (results.user.uid || results.groupExists) {
-			const regex = isLatinMention.test(match) ?
+			const regex = utility.isLatinMention.test(match) ?
 				new RegExp(`(?:^|\\s|\>|;)${match}\\b`, 'g') :
 				new RegExp(`(?:^|\\s|\>|;)${match}`, 'g');
 
@@ -438,7 +419,7 @@ SocketPlugins.mentions.listGroups = function (socket, data, callback) {
 		if (err) {
 			return callback(err);
 		}
-		const noMentionGroups = getNoMentionGroups();
+		const noMentionGroups = utility.getNoMentionGroups();
 		groups = groups.filter(groupName => groupName && !noMentionGroups.includes(groupName)).map(groupName => validator.escape(groupName));
 		callback(null, groups);
 	});
