@@ -7,6 +7,9 @@ const { sendNotificationToUids } = require('./lib/notifications');
 const {
 	nconf, api, Groups, Meta, posts, slugify, SocketPlugins, Topics, User, utils,
 } = require('./lib/nodebb');
+const {
+	filterDisallowedFullnames, filterPrivilegedUids, getGroupMemberUids, stripDisallowedFullnames,
+} = require('./lib/users');
 const utility = require('./lib/utility');
 
 
@@ -88,8 +91,8 @@ Mentions.notify = function (data) {
 					User.getUidByUserslug(slug, next);
 				}, next);
 			},
-			groupData: function (next) {
-				getGroupMemberUids(results.groupRecipients, next);
+			groupData: async function () {
+				return getGroupMemberUids(results.groupRecipients);
 			},
 			topicFollowers: function (next) {
 				if (Mentions._settings.disableFollowedTopics === 'on') {
@@ -152,24 +155,6 @@ Mentions.addFields = async (data) => {
 	}
 	return data;
 };
-
-function getGroupMemberUids(groupRecipients, callback) {
-	async.map(groupRecipients, (slug, next) => {
-		Groups.getGroupNameByGroupSlug(slug, next);
-	}, (err, groupNames) => {
-		if (err) {
-			return callback(err);
-		}
-		async.map(groupNames, (groupName, next) => {
-			Groups.getMembers(groupName, 0, -1, next);
-		}, (err, groupMembers) => {
-			if (err) {
-				return callback(err);
-			}
-			callback(null, { groupNames: groupNames, groupMembers: groupMembers });
-		});
-	});
-}
 
 Mentions.parsePost = async (data) => {
 	if (!data || !data.postData || !data.postData.content) {
@@ -266,47 +251,6 @@ Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
 	return split.join('');
 };
 
-/*
-	Local utility methods
-*/
-async function filterPrivilegedUids(uids, cid, toPid) {
-	let toPidUid;
-	if (toPid) {
-		toPidUid = await posts.getPostField(toPid, 'uid');
-	}
-
-	// Remove administrators, global mods, and moderators of the post's cid
-	uids = await Promise.all(uids.map(async (uid) => {
-		// Direct replies are a-ok.
-		if (uid === toPidUid) {
-			return uid;
-		}
-
-		const [isAdmin, isMod] = await Promise.all([
-			User.isAdministrator(uid),
-			User.isModerator(uid, cid),	// covers gmod as well
-		]);
-
-		return isAdmin || isMod ? false : uid;
-	}));
-
-	return uids.filter(Boolean);
-}
-
-async function filterDisallowedFullnames(users) {
-	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
-	return users.filter((user, index) => userSettings[index].showfullname);
-}
-
-async function stripDisallowedFullnames(users) {
-	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
-	return users.map((user, index) => {
-		if (!userSettings[index].showfullname) {
-			user.fullname = null;
-		}
-		return user;
-	});
-}
 
 /*
 	WebSocket methods
