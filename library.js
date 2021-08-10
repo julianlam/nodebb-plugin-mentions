@@ -1,39 +1,25 @@
 'use strict';
 
 const	async = require('async');
-
-const winston = module.parent.require('winston');
-const XRegExp = require('xregexp');
+const Entities = require('html-entities').XmlEntities;
 const validator = require('validator');
+const XRegExp = require('xregexp');
 
-const nconf = module.parent.require('nconf');
-
-const db = require.main.require('./src/database');
-const api = require.main.require('./src/api');
-const Topics = require.main.require('./src/topics');
-const posts = require.main.require('./src/posts');
-const User = require.main.require('./src/user');
-const Groups = require.main.require('./src/groups');
-const Notifications = require.main.require('./src/notifications');
-const Privileges = require.main.require('./src/privileges');
-const plugins = require.main.require('./src/plugins');
-const Meta = require.main.require('./src/meta');
-const slugify = require.main.require('./src/slugify');
-const batch = require.main.require('./src/batch');
-const utils = require.main.require('./public/src/utils');
-
-const SocketPlugins = require.main.require('./src/socket.io/plugins');
-
+const {
+	nconf, winston,
+	api, batch, db, Groups, Meta, Notifications, plugins, posts, Privileges,
+	slugify, SocketPlugins, Topics, User, utils,
+} = require('./lib/nodebb');
 const utility = require('./lib/utility');
+
 
 const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
 const isLatinMention = /@[\w\d\-_.]+$/;
 const removePunctuationSuffix = function (string) {
 	return string.replace(/[!?.]*$/, '');
 };
-const Entities = require('html-entities').XmlEntities;
-
 const entities = new Entities();
+
 
 const Mentions = {
 	_settings: {},
@@ -49,7 +35,7 @@ SocketPlugins.mentions = {};
 
 Mentions.init = async (data) => {
 	const hostMiddleware = require.main.require('./src/middleware');
-	const controllers = require('./controllers');
+	const controllers = require('./lib/controllers');
 
 	data.router.get('/admin/plugins/mentions', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
 	data.router.get('/api/admin/plugins/mentions', controllers.renderAdminPage);
