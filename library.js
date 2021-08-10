@@ -3,10 +3,9 @@
 const	async = require('async');
 const validator = require('validator');
 
+const { sendNotificationToUids } = require('./lib/notifications');
 const {
-	nconf, winston,
-	api, batch, db, Groups, Meta, Notifications, plugins, posts, Privileges,
-	slugify, SocketPlugins, Topics, User, utils,
+	nconf, api, Groups, Meta, posts, slugify, SocketPlugins, Topics, User, utils,
 } = require('./lib/nodebb');
 const utility = require('./lib/utility');
 
@@ -127,11 +126,11 @@ Mentions.notify = function (data) {
 				});
 			});
 
-			sendNotificationToUids(postData, uids, 'user', `[[notifications:user_mentioned_you_in, ${results.author}, ${titleEscaped}]]`);
+			sendNotificationToUids(postData, uids, 'user', `[[notifications:user_mentioned_you_in, ${results.author}, ${titleEscaped}]]`, Mentions._settings.overrideIgnores === 'on');
 
 			results.groupData.groupNames.forEach((groupName, index) => {
 				const memberUids = results.groupData.groupMembers[index];
-				sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${results.author}, ${groupName}, ${titleEscaped}]]`);
+				sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${results.author}, ${groupName}, ${titleEscaped}]]`, Mentions._settings.overrideIgnores === 'on');
 			});
 		});
 	});
@@ -153,94 +152,6 @@ Mentions.addFields = async (data) => {
 	}
 	return data;
 };
-
-function sendNotificationToUids(postData, uids, nidType, notificationText) {
-	if (!uids.length) {
-		return;
-	}
-
-	let filteredUids = [];
-	let notification;
-	async.waterfall([
-		function (next) {
-			createNotification(postData, nidType, notificationText, next);
-		},
-		function (_notification, next) {
-			notification = _notification;
-			if (!notification) {
-				return next();
-			}
-
-			batch.processArray(uids, (uids, next) => {
-				async.waterfall([
-					function (next) {
-						Privileges.topics.filterUids('read', postData.tid, uids, next);
-					},
-					function (_uids, next) {
-						if (Mentions._settings.overrideIgnores === 'on') {
-							return setImmediate(next, null, _uids);
-						}
-
-						Topics.filterIgnoringUids(postData.tid, _uids, next);
-					},
-					function (_uids, next) {
-						// Filter out uids that have already been notified for this pid
-						db.isSortedSetMembers(`mentions:sent:${postData.pid}`, _uids, (err, exists) => {
-							next(err, _uids.filter((uid, idx) => !exists[idx]));
-						});
-					},
-					function (_uids, next) {
-						if (!_uids.length) {
-							return next();
-						}
-
-						filteredUids = filteredUids.concat(_uids);
-
-						next();
-					},
-				], next);
-			}, {
-				interval: 1000,
-				batch: 500,
-			}, next);
-		},
-	], (err) => {
-		if (err) {
-			return winston.error(err);
-		}
-
-		if (notification && filteredUids.length) {
-			plugins.hooks.fire('action:mentions.notify', { notification, uids: filteredUids });
-			Notifications.push(notification, filteredUids, () => {
-				const dates = filteredUids.map(() => Date.now());
-				db.sortedSetAdd(`mentions:sent:${postData.pid}`, dates, filteredUids);
-			});
-		}
-	});
-}
-
-function createNotification(postData, nidType, notificationText, callback) {
-	Topics.getTopicField(postData.tid, 'title', (err, title) => {
-		if (err) {
-			return callback(err);
-		}
-		if (title) {
-			title = utils.decodeHTMLEntities(title);
-		}
-		Notifications.create({
-			type: 'mention',
-			bodyShort: notificationText,
-			bodyLong: postData.content,
-			nid: `tid:${postData.tid}:pid:${postData.pid}:uid:${postData.uid}:${nidType}`,
-			pid: postData.pid,
-			tid: postData.tid,
-			from: postData.uid,
-			path: `/post/${postData.pid}`,
-			topicTitle: title,
-			importance: 6,
-		}, callback);
-	});
-}
 
 function getGroupMemberUids(groupRecipients, callback) {
 	async.map(groupRecipients, (slug, next) => {
