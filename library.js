@@ -1,38 +1,41 @@
 'use strict';
 
-var	async = require('async');
-var winston = module.parent.require('winston');
-var XRegExp = require('xregexp');
-var validator = require('validator');
-var nconf = module.parent.require('nconf');
+const	async = require('async');
 
-var db = require.main.require('./src/database');
-var api = require.main.require('./src/api');
-var Topics = require.main.require('./src/topics');
-var posts = require.main.require('./src/posts');
-var User = require.main.require('./src/user');
-var Groups = require.main.require('./src/groups');
-var Notifications = require.main.require('./src/notifications');
-var Privileges = require.main.require('./src/privileges');
-var plugins = require.main.require('./src/plugins');
-var Meta = require.main.require('./src/meta');
-var slugify = require.main.require('./src/slugify');
-var batch = require.main.require('./src/batch');
+const winston = module.parent.require('winston');
+const XRegExp = require('xregexp');
+const validator = require('validator');
+
+const nconf = module.parent.require('nconf');
+
+const db = require.main.require('./src/database');
+const api = require.main.require('./src/api');
+const Topics = require.main.require('./src/topics');
+const posts = require.main.require('./src/posts');
+const User = require.main.require('./src/user');
+const Groups = require.main.require('./src/groups');
+const Notifications = require.main.require('./src/notifications');
+const Privileges = require.main.require('./src/privileges');
+const plugins = require.main.require('./src/plugins');
+const Meta = require.main.require('./src/meta');
+const slugify = require.main.require('./src/slugify');
+const batch = require.main.require('./src/batch');
 const utils = require.main.require('./public/src/utils');
 
-var SocketPlugins = require.main.require('./src/socket.io/plugins');
+const SocketPlugins = require.main.require('./src/socket.io/plugins');
 
 const utility = require('./lib/utility');
 
-var regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
-var isLatinMention = /@[\w\d\-_.]+$/;
-var removePunctuationSuffix = function(string) {
+const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
+const isLatinMention = /@[\w\d\-_.]+$/;
+const removePunctuationSuffix = function (string) {
 	return string.replace(/[!?.]*$/, '');
 };
-var Entities = require('html-entities').XmlEntities;
-var entities = new Entities();
+const Entities = require('html-entities').XmlEntities;
 
-var Mentions = {
+const entities = new Entities();
+
+const Mentions = {
 	_settings: {},
 	_defaults: {
 		disableFollowedTopics: 'off',
@@ -40,13 +43,13 @@ var Mentions = {
 		disableGroupMentions: '[]',
 		overrideIgnores: 'off',
 		display: '',
-	}
+	},
 };
 SocketPlugins.mentions = {};
 
 Mentions.init = async (data) => {
-	var hostMiddleware = require.main.require('./src/middleware');
-	var controllers = require('./controllers');
+	const hostMiddleware = require.main.require('./src/middleware');
+	const controllers = require('./controllers');
 
 	data.router.get('/admin/plugins/mentions', hostMiddleware.admin.buildHeader, controllers.renderAdminPage);
 	data.router.get('/api/admin/plugins/mentions', controllers.renderAdminPage);
@@ -58,14 +61,14 @@ Mentions.init = async (data) => {
 Mentions.addAdminNavigation = async (header) => {
 	header.plugins.push({
 		route: '/plugins/mentions',
-		name: 'Mentions'
+		name: 'Mentions',
 	});
 
 	return header;
 };
 
 function getNoMentionGroups() {
-	var noMentionGroups = ['registered-users', 'guests'];
+	let noMentionGroups = ['registered-users', 'guests'];
 	try {
 		noMentionGroups = noMentionGroups.concat(JSON.parse(Mentions._settings.disableGroupMentions));
 	} catch (err) {
@@ -74,35 +77,31 @@ function getNoMentionGroups() {
 	return noMentionGroups;
 }
 
-Mentions.notify = function(data) {
-	var postData = data.post;
-	var cleanedContent = Mentions.clean(postData.content, true, true, true);
-	var matches = cleanedContent.match(regex);
+Mentions.notify = function (data) {
+	const postData = data.post;
+	const cleanedContent = Mentions.clean(postData.content, true, true, true);
+	let matches = cleanedContent.match(regex);
 
 	if (!matches) {
 		return;
 	}
 
-	var noMentionGroups = getNoMentionGroups();
+	const noMentionGroups = getNoMentionGroups();
 
-	matches = matches.map(function(match) {
-		return slugify(match);
-	}).filter(function(match, index, array) {
-		return match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1;
-	});
+	matches = matches.map(match => slugify(match)).filter((match, index, array) => match && array.indexOf(match) === index && noMentionGroups.indexOf(match) === -1);
 
 	if (!matches.length) {
 		return;
 	}
 
 	async.parallel({
-		userRecipients: function(next) {
+		userRecipients: function (next) {
 			async.filter(matches, User.existsBySlug, next);
 		},
-		groupRecipients: function(next) {
+		groupRecipients: function (next) {
 			async.filter(matches, Groups.existsBySlug, next);
-		}
-	}, function(err, results) {
+		},
+	}, (err, results) => {
 		if (err) {
 			return;
 		}
@@ -112,47 +111,45 @@ Mentions.notify = function(data) {
 		}
 
 		async.parallel({
-			topic: function(next) {
+			topic: function (next) {
 				Topics.getTopicFields(postData.tid, ['title', 'cid'], next);
 			},
-			author: function(next) {
+			author: function (next) {
 				User.getUserField(postData.uid, 'username', next);
 			},
-			uids: function(next) {
-				async.map(results.userRecipients, function(slug, next) {
+			uids: function (next) {
+				async.map(results.userRecipients, (slug, next) => {
 					User.getUidByUserslug(slug, next);
 				}, next);
 			},
-			groupData: function(next) {
+			groupData: function (next) {
 				getGroupMemberUids(results.groupRecipients, next);
 			},
-			topicFollowers: function(next) {
+			topicFollowers: function (next) {
 				if (Mentions._settings.disableFollowedTopics === 'on') {
 					Topics.getFollowers(postData.tid, next);
 				} else {
 					next(null, []);
 				}
-			}
+			},
 		}, async (err, results) => {
 			if (err) {
 				return;
 			}
 
-			var title = entities.decode(results.topic.title);
-			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
+			const title = entities.decode(results.topic.title);
+			const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
-			var uids = results.uids.filter(function(uid, index, array) {
-				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString());
-			});
+			let uids = results.uids.filter((uid, index, array) => array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString()));
 
 			if (Mentions._settings.privilegedDirectReplies === 'on') {
 				const toPid = await posts.getPostField(data.post.pid, 'toPid');
 				uids = await filterPrivilegedUids(uids, data.post.cid, toPid);
 			}
 
-			var groupMemberUids = {};
-			results.groupData.groupNames.forEach(function(groupName, index) {
-				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter(function(uid) {
+			const groupMemberUids = {};
+			results.groupData.groupNames.forEach((groupName, index) => {
+				results.groupData.groupMembers[index] = results.groupData.groupMembers[index].filter((uid) => {
 					if (!uid || groupMemberUids[uid]) {
 						return false;
 					}
@@ -163,11 +160,11 @@ Mentions.notify = function(data) {
 				});
 			});
 
-			sendNotificationToUids(postData, uids, 'user', '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]');
+			sendNotificationToUids(postData, uids, 'user', `[[notifications:user_mentioned_you_in, ${results.author}, ${titleEscaped}]]`);
 
-			results.groupData.groupNames.forEach(function(groupName, index) {
-				var memberUids = results.groupData.groupMembers[index];
-				sendNotificationToUids(postData, memberUids, groupName, '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupName + ', ' + titleEscaped + ']]');
+			results.groupData.groupNames.forEach((groupName, index) => {
+				const memberUids = results.groupData.groupMembers[index];
+				sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${results.author}, ${groupName}, ${titleEscaped}]]`);
 			});
 		});
 	});
@@ -195,8 +192,8 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 		return;
 	}
 
-	var filteredUids = [];
-	var notification;
+	let filteredUids = [];
+	let notification;
 	async.waterfall([
 		function (next) {
 			createNotification(postData, nidType, notificationText, next);
@@ -207,12 +204,12 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 				return next();
 			}
 
-			batch.processArray(uids, function (uids, next) {
+			batch.processArray(uids, (uids, next) => {
 				async.waterfall([
-					function(next) {
+					function (next) {
 						Privileges.topics.filterUids('read', postData.tid, uids, next);
 					},
-					function(_uids, next) {
+					function (_uids, next) {
 						if (Mentions._settings.overrideIgnores === 'on') {
 							return setImmediate(next, null, _uids);
 						}
@@ -221,11 +218,11 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 					},
 					function (_uids, next) {
 						// Filter out uids that have already been notified for this pid
-						db.isSortedSetMembers('mentions:sent:' + postData.pid, _uids, function (err, exists) {
-							next(err, _uids.filter((uid, idx) => !exists[idx]))
+						db.isSortedSetMembers(`mentions:sent:${postData.pid}`, _uids, (err, exists) => {
+							next(err, _uids.filter((uid, idx) => !exists[idx]));
 						});
 					},
-					function(_uids, next) {
+					function (_uids, next) {
 						if (!_uids.length) {
 							return next();
 						}
@@ -233,30 +230,30 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 						filteredUids = filteredUids.concat(_uids);
 
 						next();
-					}
+					},
 				], next);
 			}, {
 				interval: 1000,
 				batch: 500,
 			}, next);
 		},
-	], function (err) {
+	], (err) => {
 		if (err) {
 			return winston.error(err);
 		}
 
 		if (notification && filteredUids.length) {
 			plugins.hooks.fire('action:mentions.notify', { notification, uids: filteredUids });
-			Notifications.push(notification, filteredUids, function () {
+			Notifications.push(notification, filteredUids, () => {
 				const dates = filteredUids.map(() => Date.now());
-				db.sortedSetAdd('mentions:sent:' + postData.pid, dates, filteredUids);
+				db.sortedSetAdd(`mentions:sent:${postData.pid}`, dates, filteredUids);
 			});
 		}
 	});
 }
 
 function createNotification(postData, nidType, notificationText, callback) {
-	Topics.getTopicField(postData.tid, 'title', function (err, title) {
+	Topics.getTopicField(postData.tid, 'title', (err, title) => {
 		if (err) {
 			return callback(err);
 		}
@@ -267,11 +264,11 @@ function createNotification(postData, nidType, notificationText, callback) {
 			type: 'mention',
 			bodyShort: notificationText,
 			bodyLong: postData.content,
-			nid: 'tid:' + postData.tid + ':pid:' + postData.pid + ':uid:' + postData.uid + ':' + nidType,
+			nid: `tid:${postData.tid}:pid:${postData.pid}:uid:${postData.uid}:${nidType}`,
 			pid: postData.pid,
 			tid: postData.tid,
 			from: postData.uid,
-			path: '/post/' + postData.pid,
+			path: `/post/${postData.pid}`,
 			topicTitle: title,
 			importance: 6,
 		}, callback);
@@ -279,19 +276,19 @@ function createNotification(postData, nidType, notificationText, callback) {
 }
 
 function getGroupMemberUids(groupRecipients, callback) {
-	async.map(groupRecipients, function(slug, next) {
+	async.map(groupRecipients, (slug, next) => {
 		Groups.getGroupNameByGroupSlug(slug, next);
-	}, function(err, groupNames) {
+	}, (err, groupNames) => {
 		if (err) {
 			return callback(err);
 		}
-		async.map(groupNames, function(groupName, next) {
+		async.map(groupNames, (groupName, next) => {
 			Groups.getMembers(groupName, 0, -1, next);
-		}, function(err, groupMembers) {
+		}, (err, groupMembers) => {
 			if (err) {
 				return callback(err);
 			}
-			callback(null, {groupNames: groupNames, groupMembers: groupMembers});
+			callback(null, { groupNames: groupNames, groupMembers: groupMembers });
 		});
 	});
 }
@@ -308,8 +305,8 @@ Mentions.parsePost = async (data) => {
 
 Mentions.parseRaw = async (content) => {
 	let splitContent = utility.split(content, false, false, true);
-	var matches = [];
-	splitContent.forEach(function(cleanedContent, i) {
+	let matches = [];
+	splitContent.forEach((cleanedContent, i) => {
 		if ((i & 1) === 0) {
 			matches = matches.concat(cleanedContent.match(regex) || []);
 		}
@@ -319,21 +316,20 @@ Mentions.parseRaw = async (content) => {
 		return content;
 	}
 
-	matches = matches.filter(function(cur, idx) {
+	matches = matches.filter((cur, idx) =>
 		// Eliminate duplicates
-		return idx === matches.indexOf(cur);
-	}).map(function(match) {
+		 idx === matches.indexOf(cur)).map((match) => {
 		/**
 		 *	Javascript-favour of regex does not support lookaround,
 		 *	so need to clean up the cruft by discarding everthing
 		 *	before the @
 		 */
-		var atIndex = match.indexOf('@');
+		const atIndex = match.indexOf('@');
 		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
 	await Promise.all(matches.map(async (match) => {
-		var slug = slugify(match.slice(1));
+		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
 
 		const uid = await User.getUidByUserslug(slug);
@@ -343,22 +339,22 @@ Mentions.parseRaw = async (content) => {
 		});
 
 		if (results.user.uid || results.groupExists) {
-			var regex = isLatinMention.test(match)
-				? new RegExp('(?:^|\\s|\>|;)' + match + '\\b', 'g')
-				: new RegExp('(?:^|\\s|\>|;)' + match, 'g');
+			const regex = isLatinMention.test(match) ?
+				new RegExp(`(?:^|\\s|\>|;)${match}\\b`, 'g') :
+				new RegExp(`(?:^|\\s|\>|;)${match}`, 'g');
 
 			let skip = false;
 
-			splitContent = splitContent.map(function(c, i) {
+			splitContent = splitContent.map((c, i) => {
 				// *Might* not be needed anymore? Check pls...
 				if (skip || (i & 1) === 1) {
 					skip = c === '<code>';	// if code block detected, skip the content inside of it
 					return c;
 				}
-				return c.replace(regex, function(match) {
+				return c.replace(regex, (match) => {
 					// Again, cleaning up lookaround leftover bits
-					var atIndex = match.indexOf('@');
-					var plain = match.slice(0, atIndex);
+					const atIndex = match.indexOf('@');
+					const plain = match.slice(0, atIndex);
 					match = match.slice(atIndex);
 					if (results.user.uid) {
 						switch (Mentions._settings.display) {
@@ -371,9 +367,9 @@ Mentions.parseRaw = async (content) => {
 						}
 					}
 
-					var str = results.user.uid
-							? '<a class="plugin-mentions-user plugin-mentions-a" href="' + nconf.get('url') + '/uid/' + results.user.uid + '">' + match + '</a>'
-							: '<a class="plugin-mentions-group plugin-mentions-a" href="' + nconf.get('url') + '/groups/' + slug + '">' + match + '</a>';
+					const str = results.user.uid ?
+						`<a class="plugin-mentions-user plugin-mentions-a" href="${nconf.get('url')}/uid/${results.user.uid}">${match}</a>` :
+						`<a class="plugin-mentions-group plugin-mentions-a" href="${nconf.get('url')}/groups/${slug}">${match}</a>`;
 
 					return plain + str;
 				});
@@ -384,19 +380,18 @@ Mentions.parseRaw = async (content) => {
 	return splitContent.join('');
 };
 
-Mentions.clean = function(input, isMarkdown, stripBlockquote, stripCode) {
-	var split = utility.split(input, isMarkdown, stripBlockquote, stripCode);
-	split = split.filter(function(e, i) {
+Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
+	let split = utility.split(input, isMarkdown, stripBlockquote, stripCode);
+	split = split.filter((e, i) =>
 		// only keep non-code/non-blockquote
-		return (i & 1) === 0;
-	});
+		 (i & 1) === 0);
 	return split.join('');
 };
 
 /*
 	Local utility methods
 */
-async function filterPrivilegedUids (uids, cid, toPid) {
+async function filterPrivilegedUids(uids, cid, toPid) {
 	let toPidUid;
 	if (toPid) {
 		toPidUid = await posts.getPostField(toPid, 'uid');
@@ -420,12 +415,12 @@ async function filterPrivilegedUids (uids, cid, toPid) {
 	return uids.filter(Boolean);
 }
 
-async function filterDisallowedFullnames (users) {
+async function filterDisallowedFullnames(users) {
 	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
 	return users.filter((user, index) => userSettings[index].showfullname);
 }
 
-async function stripDisallowedFullnames (users) {
+async function stripDisallowedFullnames(users) {
 	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
 	return users.map((user, index) => {
 		if (!userSettings[index].showfullname) {
@@ -441,28 +436,24 @@ async function stripDisallowedFullnames (users) {
 
 SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
 	const uids = await Topics.getUids(data.tid);
-	const users =  await User.getUsers(uids);
+	const users = await User.getUsers(uids);
 	if (Meta.config.hideFullname) {
 		return users;
 	}
 	return stripDisallowedFullnames(users);
 };
 
-SocketPlugins.mentions.listGroups = function(socket, data, callback) {
+SocketPlugins.mentions.listGroups = function (socket, data, callback) {
 	if (Mentions._settings.autofillGroups === 'off') {
 		return callback(null, []);
 	}
 
-	Groups.getGroups('groups:visible:createtime', 0, -1, function(err, groups) {
+	Groups.getGroups('groups:visible:createtime', 0, -1, (err, groups) => {
 		if (err) {
 			return callback(err);
 		}
-		var noMentionGroups = getNoMentionGroups();
-		groups = groups.filter(function(groupName) {
-			return groupName && !noMentionGroups.includes(groupName);
-		}).map(function(groupName) {
-			return validator.escape(groupName);
-		});
+		const noMentionGroups = getNoMentionGroups();
+		groups = groups.filter(groupName => groupName && !noMentionGroups.includes(groupName)).map(groupName => validator.escape(groupName));
 		callback(null, groups);
 	});
 };
@@ -479,14 +470,12 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 		users = await stripDisallowedFullnames(users);
 
 		// Search by fullname
-		let { users: fullnameUsers } = await api.users.search(socket, {query: data.query, searchBy: 'fullname'});
+		let { users: fullnameUsers } = await api.users.search(socket, { query: data.query, searchBy: 'fullname' });
 		// Hide results of users that do not allow their full name to be visible (prevents "enumeration attack")
 		fullnameUsers = await filterDisallowedFullnames(fullnameUsers);
 
 		// Merge results, filter duplicates (from username search, leave fullname results)
-		users = users.filter(userObj =>
-			fullnameUsers.filter(userObj2 => userObj.uid === userObj2.uid).length === 0
-		).concat(fullnameUsers);
+		users = users.filter(userObj => fullnameUsers.filter(userObj2 => userObj.uid === userObj2.uid).length === 0).concat(fullnameUsers);
 	}
 
 	if (Mentions._settings.privilegedDirectReplies !== 'on') {
@@ -497,7 +486,7 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 		const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
 		const filteredUids = await filterPrivilegedUids(users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
 
-		users = users.filter((userObj) => filteredUids.includes(userObj.uid));
+		users = users.filter(userObj => filteredUids.includes(userObj.uid));
 	}
 
 	return users;

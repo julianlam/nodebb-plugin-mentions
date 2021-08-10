@@ -1,8 +1,6 @@
 'use strict';
-/* globals $, app, socket */
 
 define('admin/plugins/mentions', ['settings'], function (Settings) {
-
 	var ACP = {};
 
 	ACP.init = function () {
@@ -19,7 +17,7 @@ define('admin/plugins/mentions', ['settings'], function (Settings) {
 					message: 'Please reload your NodeBB to apply these settings',
 					clickfn: function () {
 						socket.emit('admin.reload');
-					}
+					},
 				});
 			});
 		});

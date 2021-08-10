@@ -1,12 +1,10 @@
-"use strict";
-/* globals socket, app */
+'use strict';
 
-
-$(document).ready(function() {
+$(document).ready(function () {
 	let groupList = [];
 	let localUserList = [];
 
-	$(window).on('composer:autocomplete:init chat:autocomplete:init', function(ev, data) {
+	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
 		loadTopicUsers(data.element);
 
 		if (!groupList.length) {
@@ -30,7 +28,7 @@ $(document).ready(function() {
 					socket.emit('plugins.mentions.userSearch', {
 						query: term,
 						composerObj: composer.posts[uuid],
-					}, function(err, users) {
+					}, function (err, users) {
 						if (err) {
 							return callback([]);
 						}
@@ -40,7 +38,7 @@ $(document).ready(function() {
 						// Add groups that start with the search term
 						const groupMentions = groupList.filter(function (groupName) {
 							return groupName.toLocaleLowerCase().startsWith(term.toLocaleLowerCase());
-						}).sort(function(a, b) {
+						}).sort(function (a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase() ? 1 : -1;
 						});
 						// Add group mentions at the bottom of dropdown
@@ -59,24 +57,24 @@ $(document).ready(function() {
 				mention.find('span').remove();
 				return '@' + slugify(mention.text(), true) + ' ';
 			},
-			cache: true
+			cache: true,
 		};
 
 		data.strategies.push(strategy);
 	});
 
-	$(window).on('action:composer.loaded', function(e, data) {
+	$(window).on('action:composer.loaded', function (_, data) {
 		const composer = $('#cmp-uuid-' + data.post_uuid + ' .write');
 		composer.attr('data-mentions', '1');
 	});
 
-	function sortUsers (users) {
+	function sortUsers(users) {
 		return users.sort(function (user1, user2) {
 			return user1.username.toLocaleLowerCase() > user2.username.toLocaleLowerCase() ? 1 : -1;
 		});
 	}
 
-	function usersToMentions (users, helpers) {
+	function usersToMentions(users, helpers) {
 		return users.reduce(function (carry, user) {
 			// Don't add current user to suggestions
 			if (app.user.username && app.user.username === user.username) {
@@ -110,18 +108,20 @@ $(document).ready(function() {
 			socket.emit('plugins.mentions.getTopicUsers', {
 				tid: composerObj.tid,
 			}, function (err, users) {
+				if (err) {
+					console.error('[nodebb-plugin-mentions] error', err);
+				}
 				localUserList = users;
 			});
 		});
 	}
 
 	function loadGroupList() {
-		socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
+		socket.emit('plugins.mentions.listGroups', function (err, groupNames) {
 			if (err) {
 				return app.alertError(err.message);
 			}
 			groupList = groupNames;
 		});
 	}
-
 });

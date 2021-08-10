@@ -1,11 +1,14 @@
+'use strict';
+
 const assert = require('assert');
 const XRegExp = require('xregexp');
+
 const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
 
 // use core slugify module
 const slugify = require.main.require('./src/slugify');
 
-describe('regex', function () {
+describe('regex', () => {
 	const matcher = new RegExp(regex);
 	const strings = [
 		'@testUser',
@@ -17,9 +20,9 @@ describe('regex', function () {
 		'end of sentence. @testUser',
 		'@testUser.',
 		'@testUser\'s some text',
-	]
+	];
 	it('should match a mention in all strings', () => {
-		strings.forEach(string => {
+		strings.forEach((string) => {
 			const matches = string.match(matcher);
 			assert(matches);
 			assert.equal(slugify(matches[0]), 'testuser');
@@ -30,7 +33,7 @@ describe('regex', function () {
 	// TODO: Ideally the regex matcher should be its own utility function in `lib/`
 });
 
-describe('splitter', function () {
+describe('splitter', () => {
 	const utility = require('../lib/utility');
 	const testHTMLText = 'this is a post with <code>stuff in code</code> and a\n\n<blockquote>blockquote or two</blockquote>';
 	const testMdText = 'this is a post with `stuff in code` and a \n\n>blockquote or two';
