@@ -1,6 +1,12 @@
+'use strict';
+
+/* globals describe, it, before */
+
 const assert = require('assert');
 const XRegExp = require('xregexp');
 const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
+
+const db = require.main.require('./test/mocks/databasemock');
 
 // use core slugify module
 const slugify = require.main.require('./src/slugify');
