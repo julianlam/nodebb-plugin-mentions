@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "async": "^2",
-    "html-entities": "^1.2.1",
+    "html-entities": "^2.0.0",
     "validator": "^13.0.0",
     "xregexp": "^5.1.0"
   },
