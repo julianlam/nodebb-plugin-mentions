@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+
 'use strict';
 
 const _ = require('lodash');
@@ -20,7 +22,7 @@ const plugins = require.main.require('./src/plugins');
 const Meta = require.main.require('./src/meta');
 const slugify = require.main.require('./src/slugify');
 const batch = require.main.require('./src/batch');
-const utils = require.main.require('./public/src/utils');
+const utils = require.main.require('./src/utils');
 const SocketPlugins = require.main.require('./src/socket.io/plugins');
 
 const utility = require('./lib/utility');
@@ -128,7 +130,7 @@ Mentions.notify = async function (data) {
 
 	const filteredUids = await filterUidsAlreadyMentioned(uids, postData.pid);
 	if (filteredUids.length) {
-		sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user_mentioned_you_in, ${author}, ${titleEscaped}]]`);
+		await sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user_mentioned_you_in, ${author}, ${titleEscaped}]]`);
 		await db.setAdd(`mentions:pid:${postData.pid}:uids`, filteredUids);
 	}
 
@@ -136,11 +138,9 @@ Mentions.notify = async function (data) {
 		if (groupsToNotify[i] && groupsToNotify[i].name && groupsToNotify[i].members) {
 			const memberUids = groupsToNotify[i].members;
 			const groupName = groupsToNotify[i].name;
-			// eslint-disable-next-line no-await-in-loop
 			const groupMentionSent = await db.isSetMember(`mentions:pid:${postData.pid}:groups`, groupName);
 			if (!groupMentionSent && memberUids.length) {
-				sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${author} , ${groupName}, ${titleEscaped}]]`);
-				// eslint-disable-next-line no-await-in-loop
+				await sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${author} , ${groupName}, ${titleEscaped}]]`);
 				await db.setAdd(`mentions:pid:${postData.pid}:groups`, groupName);
 			}
 		}
