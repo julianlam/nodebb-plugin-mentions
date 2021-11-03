@@ -65,7 +65,7 @@ Mentions.addAdminNavigation = async (header) => {
 };
 
 function getNoMentionGroups() {
-	var noMentionGroups = ['registered-users', 'guests'];
+	var noMentionGroups = ['registered-users', 'verified-users', 'unverified-users', 'guests'];
 	try {
 		noMentionGroups = noMentionGroups.concat(JSON.parse(Mentions._settings.disableGroupMentions));
 	} catch (err) {
@@ -123,8 +123,8 @@ Mentions.notify = function(data) {
 					User.getUidByUserslug(slug, next);
 				}, next);
 			},
-			groupData: function(next) {
-				getGroupMemberUids(results.groupRecipients, next);
+			groupData: async function() {
+				return await getGroupMemberUids(results.groupRecipients);
 			},
 			topicFollowers: function(next) {
 				if (Mentions._settings.disableFollowedTopics === 'on') {
@@ -141,8 +141,8 @@ Mentions.notify = function(data) {
 			var title = entities.decode(results.topic.title);
 			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
-			var uids = results.uids.filter(function(uid, index, array) {
-				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid.toString());
+			var uids = results.uids.map(String).filter(function(uid, index, array) {
+				return array.indexOf(uid) === index && parseInt(uid, 10) !== parseInt(postData.uid, 10) && !results.topicFollowers.includes(uid);
 			});
 
 			if (Mentions._settings.privilegedDirectReplies === 'on') {
@@ -159,19 +159,34 @@ Mentions.notify = function(data) {
 					groupMemberUids[uid] = 1;
 					return !uids.includes(uid) &&
 						parseInt(uid, 10) !== parseInt(postData.uid, 10) &&
-						!results.topicFollowers.includes(uid.toString());
+						!results.topicFollowers.includes(uid);
 				});
 			});
 
-			sendNotificationToUids(postData, uids, 'user', '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]');
+			const filteredUids = await filterUidsAlreadyMentioned(uids, postData.pid);
 
-			results.groupData.groupNames.forEach(function(groupName, index) {
-				var memberUids = results.groupData.groupMembers[index];
-				sendNotificationToUids(postData, memberUids, groupName, '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupName + ', ' + titleEscaped + ']]');
-			});
+			if (filteredUids.length) {
+				sendNotificationToUids(postData, filteredUids, 'user', '[[notifications:user_mentioned_you_in, ' + results.author + ', ' + titleEscaped + ']]');
+				await db.setAdd(`mentions:pid:${postData.pid}:uids`, filteredUids);
+			}
+
+			for (let i = 0; i < results.groupData.groupNames.length; ++i) {
+				const memberUids = results.groupData.groupMembers[i];
+				const groupName = results.groupData.groupNames[i];
+				const groupMentionSent = await db.isSetMember(`mentions:pid:${postData.pid}:groups`, groupName);
+				if (!groupMentionSent && memberUids.length) {
+					sendNotificationToUids(postData, memberUids, groupName, '[[notifications:user_mentioned_group_in, ' + results.author + ', ' + groupName + ', ' + titleEscaped + ']]');
+					await db.setAdd(`mentions:pid:${postData.pid}:groups`, groupName);
+				}
+			};
 		});
 	});
 };
+
+async function filterUidsAlreadyMentioned(uids, pid) {
+	const isMember = await db.isSetMembers(`mentions:pid:${pid}:uids`, uids);
+	return uids.filter((uid, index) => !isMember[index]);
+}
 
 Mentions.addFilters = async (data) => {
 	data.regularFilters.push({ name: '[[notifications:mentions]]', filter: 'mention' });
@@ -219,12 +234,6 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 
 						Topics.filterIgnoringUids(postData.tid, _uids, next);
 					},
-					function (_uids, next) {
-						// Filter out uids that have already been notified for this pid
-						db.isSortedSetMembers('mentions:sent:' + postData.pid, _uids, function (err, exists) {
-							next(err, _uids.filter((uid, idx) => !exists[idx]))
-						});
-					},
 					function(_uids, next) {
 						if (!_uids.length) {
 							return next();
@@ -247,10 +256,7 @@ function sendNotificationToUids(postData, uids, nidType, notificationText) {
 
 		if (notification && filteredUids.length) {
 			plugins.hooks.fire('action:mentions.notify', { notification, uids: filteredUids });
-			Notifications.push(notification, filteredUids, function () {
-				const dates = filteredUids.map(() => Date.now());
-				db.sortedSetAdd('mentions:sent:' + postData.pid, dates, filteredUids);
-			});
+			Notifications.push(notification, filteredUids);
 		}
 	});
 }
@@ -278,22 +284,18 @@ function createNotification(postData, nidType, notificationText, callback) {
 	});
 }
 
-function getGroupMemberUids(groupRecipients, callback) {
-	async.map(groupRecipients, function(slug, next) {
-		Groups.getGroupNameByGroupSlug(slug, next);
-	}, function(err, groupNames) {
-		if (err) {
-			return callback(err);
+async function getGroupMemberUids(groupRecipients) {
+	if (!groupRecipients.length) {
+		return { groupNames: [], groupMembers: [] };
+	}
+	const groupNames = Object.values(await db.getObjectFields('groupslug:groupname', groupRecipients));
+	const groupMembers = await Promise.all(groupNames.map(async (groupName) => {
+		if (!groupName) {
+			return [];
 		}
-		async.map(groupNames, function(groupName, next) {
-			Groups.getMembers(groupName, 0, -1, next);
-		}, function(err, groupMembers) {
-			if (err) {
-				return callback(err);
-			}
-			callback(null, {groupNames: groupNames, groupMembers: groupMembers});
-		});
-	});
+		return db.getSortedSetRange(`group:${groupName}:members`, 0, 999);
+	}));
+	return { groupNames, groupMembers };
 }
 
 Mentions.parsePost = async (data) => {

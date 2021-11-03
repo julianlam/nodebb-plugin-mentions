@@ -4,6 +4,9 @@
 	"description": "NodeBB Plugin that allows users to mention other users by prepending an '@' sign to their username",
 	"url": "https://github.com/julianlam/nodebb-plugin-mentions",
 	"library": "./library.js",
+	"upgrades": [
+        "upgrades/mentions_delete_mentions_set_zset.js"
+    ],
 	"hooks": [
 		{ "hook": "static:app.load", "method": "init" },
 		{ "hook": "filter:admin.header.build", "method": "addAdminNavigation" },
