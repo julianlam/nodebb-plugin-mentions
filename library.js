@@ -183,6 +183,13 @@ Mentions.notify = function(data) {
 	});
 };
 
+Mentions.actionPostPurge = async (hookData) => {
+	await db.deleteAll([
+		`mentions:pid:${hookData.postData.pid}:uids`,
+		`mentions:pid:${hookData.postData.pid}:groups`,
+	]);
+}
+
 async function filterUidsAlreadyMentioned(uids, pid) {
 	const isMember = await db.isSetMembers(`mentions:pid:${pid}:uids`, uids);
 	return uids.filter((uid, index) => !isMember[index]);

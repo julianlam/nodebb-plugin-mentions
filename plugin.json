@@ -14,6 +14,7 @@
 		{ "hook": "filter:parse.raw", "method": "parseRaw" },
 		{ "hook": "action:post.save", "method": "notify" },
 		{ "hook": "action:post.edit", "method": "notify" },
+		{ "hook": "action:post.purge", "method": "actionPostPurge" },
 		{ "hook": "filter:notifications.addFilters", "method": "addFilters" },
 		{ "hook": "filter:user.notificationTypes", "method": "notificationTypes" },
 		{ "hook": "filter:users.addFields", "method": "addFields" }
