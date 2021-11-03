@@ -365,7 +365,7 @@ eslint-config-airbnb-base@14.2.1:
     object.assign "^4.1.2"
     object.entries "^1.1.2"
 
-eslint-config-nodebb@^0.0.3:
+eslint-config-nodebb@0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/eslint-config-nodebb/-/eslint-config-nodebb-0.0.3.tgz#c77ed60d287f9210c967203691a94b6ed0775a6e"
   integrity sha512-SPAOeA3R3pwjRkPoPGsB+i4lDANWU+7C7Wm14a7TXD2jPS0Pc08BHZRfa2srXIay8EleI3BENqV84EMhi23ZCA==
@@ -389,7 +389,7 @@ eslint-module-utils@^2.7.0:
     find-up "^2.1.0"
     pkg-dir "^2.0.0"
 
-eslint-plugin-import@^2.24.2:
+eslint-plugin-import@2.25.2:
   version "2.25.2"
   resolved "https://registry.yarnpkg.com/eslint-plugin-import/-/eslint-plugin-import-2.25.2.tgz#b3b9160efddb702fc1636659e71ba1d10adbe9e9"
   integrity sha512-qCwQr9TYfoBHOFcVGKY9C9unq05uOxxdklmBXLVvcwo68y5Hta6/GzCZEMx2zQiu0woKNEER0LE7ZgaOfBU14g==
