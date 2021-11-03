@@ -29,8 +29,7 @@ var isLatinMention = /@[\w\d\-_.]+$/;
 var removePunctuationSuffix = function(string) {
 	return string.replace(/[!?.]*$/, '');
 };
-var Entities = require('html-entities').XmlEntities;
-var entities = new Entities();
+var entitiesDecode = require('html-entities').decode;
 
 var Mentions = {
 	_settings: {},
@@ -138,7 +137,7 @@ Mentions.notify = function(data) {
 				return;
 			}
 
-			var title = entities.decode(results.topic.title);
+			var title = entitiesDecode(results.topic.title);
 			var titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 			var uids = results.uids.map(String).filter(function(uid, index, array) {
