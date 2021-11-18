@@ -170,10 +170,12 @@ async function getGroupsToNotify(matches) {
 }
 
 Mentions.actionPostPurge = async (hookData) => {
-	await db.deleteAll([
-		`mentions:pid:${hookData.postData.pid}:uids`,
-		`mentions:pid:${hookData.postData.pid}:groups`,
-	]);
+	if (hookData && hookData.post) {
+		await db.deleteAll([
+			`mentions:pid:${hookData.post.pid}:uids`,
+			`mentions:pid:${hookData.post.pid}:groups`,
+		]);
+	}
 };
 
 async function filterUidsAlreadyMentioned(uids, pid) {
