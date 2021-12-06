@@ -118,7 +118,10 @@ $(document).ready(function() {
 	function loadGroupList() {
 		socket.emit('plugins.mentions.listGroups', function(err, groupNames) {
 			if (err) {
-				return app.alertError(err.message);
+				require(['alerts'], function (alerts) {
+					alerts.error(err);
+				})
+				return;
 			}
 			groupList = groupNames;
 		});
