@@ -1,7 +1,8 @@
 'use strict';
-/* globals $, app, socket */
 
-define('admin/plugins/mentions', ['settings'], function (Settings) {
+/* globals $, app, socket, define */
+
+define('admin/plugins/mentions', ['settings', 'alerts'], function (Settings, alerts) {
 
 	var ACP = {};
 
@@ -12,7 +13,7 @@ define('admin/plugins/mentions', ['settings'], function (Settings) {
 
 		$('#save').on('click', function () {
 			Settings.save('mentions', $('.mentions-settings'), function () {
-				app.alert({
+				alerts.alert({
 					type: 'success',
 					alert_id: 'mentions-saved',
 					title: 'Settings Saved',
