@@ -22,9 +22,9 @@
 	"scripts": [
 		"static/autofill.js"
 	],
-	"acpScripts": [
-		"static/admin.js"
-	],
+	"modules": {
+		"admin/plugins/mentions.js": "./static/admin.js"
+	},
 	"languages": "languages",
 	"defaultLang": "en_GB",
 	"templates": "templates"
