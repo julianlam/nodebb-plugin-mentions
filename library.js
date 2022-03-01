@@ -388,7 +388,8 @@ async function stripDisallowedFullnames(users) {
 
 SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
 	const uids = await Topics.getUids(data.tid);
-	const users = await User.getUsers(uids);
+	let users = await User.getUsers(uids);
+	users = users.filter(u => u && u.userslug);
 	if (Meta.config.hideFullname) {
 		return users;
 	}
