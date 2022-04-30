@@ -172,8 +172,8 @@ async function getGroupsToNotify(matches) {
 Mentions.actionPostsPurge = async (hookData) => {
 	if (hookData && Array.isArray(hookData.pids)) {
 		await db.deleteAll([
-			...hookData.pids.map(pid => `mentions:pid:${pid}:uids`),
-			...hookData.pids.map(pid => `mentions:pid:${pid}:groups`),
+			...hookData.posts.map(p => `mentions:pid:${p.pid}:uids`),
+			...hookData.posts.map(p => `mentions:pid:${p.pid}:groups`),
 		]);
 	}
 };
