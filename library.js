@@ -169,11 +169,11 @@ async function getGroupsToNotify(matches) {
 	}));
 }
 
-Mentions.actionPostPurge = async (hookData) => {
-	if (hookData && hookData.post) {
+Mentions.actionPostsPurge = async (hookData) => {
+	if (hookData && Array.isArray(hookData.pids)) {
 		await db.deleteAll([
-			`mentions:pid:${hookData.post.pid}:uids`,
-			`mentions:pid:${hookData.post.pid}:groups`,
+			...hookData.pids.map(pid => `mentions:pid:${pid}:uids`),
+			...hookData.pids.map(pid => `mentions:pid:${pid}:groups`),
 		]);
 	}
 };
