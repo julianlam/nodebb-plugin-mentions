@@ -44,11 +44,10 @@ Mentions._defaults = {
 SocketPlugins.mentions = {};
 
 Mentions.init = async (data) => {
-	const hostMiddleware = require.main.require('./src/middleware');
 	const routeHelpers = require.main.require('./src/routes/helpers');
 	const controllers = require('./controllers');
 
-	routeHelpers.setupAdminPageRoute(data.router, '/admin/plugins/mentions', hostMiddleware, [], controllers.renderAdminPage);
+	routeHelpers.setupAdminPageRoute(data.router, '/admin/plugins/mentions', controllers.renderAdminPage);
 
 	// Retrieve settings
 	Object.assign(Mentions._settings, Mentions._defaults, await Meta.settings.get('mentions'));
