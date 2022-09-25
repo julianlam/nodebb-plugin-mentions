@@ -83,7 +83,7 @@ $(document).ready(function () {
 			}
 
 			// Format suggestions as 'avatar username (fullname)'
-			const avatar = helpers.buildAvatar(user, 'sm');
+			const avatar = helpers.buildAvatar(user, '24px', true);
 			const fullname = user.fullname ? `(${user.fullname})` : '';
 			carry.push(`${avatar} ${user.username} ${helpers.escape(fullname)}`);
 
