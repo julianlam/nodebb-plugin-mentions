@@ -22,7 +22,7 @@
     "url": "https://github.com/julianlam/nodebb-plugin-mentions/issues"
   },
   "nbbpm": {
-    "compatibility": "~1.19.6 || ^2.0.0"
+    "compatibility": "^2.0.1"
   },
   "dependencies": {
     "html-entities": "^2.3.2",
