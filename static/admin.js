@@ -1,10 +1,7 @@
 'use strict';
 
-/* globals $, app, socket, define */
-
 define('admin/plugins/mentions', ['settings', 'alerts'], function (Settings, alerts) {
-
-	var ACP = {};
+	const ACP = {};
 
 	ACP.init = function () {
 		Settings.load('mentions', $('.mentions-settings'));
@@ -18,9 +15,10 @@ define('admin/plugins/mentions', ['settings', 'alerts'], function (Settings, ale
 					alert_id: 'mentions-saved',
 					title: 'Settings Saved',
 					message: 'Please reload your NodeBB to apply these settings',
+					timeout: 5000,
 					clickfn: function () {
 						socket.emit('admin.reload');
-					}
+					},
 				});
 			});
 		});
