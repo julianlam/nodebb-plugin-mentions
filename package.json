@@ -31,7 +31,7 @@
     "xregexp": "^5.1.0"
   },
   "devDependencies": {
-    "mocha": "10.1.0",
+    "mocha": "10.2.0",
     "eslint": "8.29.0",
     "eslint-config-nodebb": "0.2.1",
     "eslint-plugin-import": "2.26.0"
