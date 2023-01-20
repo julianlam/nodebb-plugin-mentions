@@ -96,12 +96,12 @@ Mentions.notify = async function (data) {
 		return;
 	}
 
-	const [topic, author, topicFollowers] = await Promise.all([
+	const [topic, userData, topicFollowers] = await Promise.all([
 		Topics.getTopicFields(postData.tid, ['title', 'cid']),
-		User.getUserField(postData.uid, 'username'),
+		User.getUserFields(postData.uid, ['username']),
 		Mentions._settings.disableFollowedTopics === 'on' ? Topics.getFollowers(postData.tid) : [],
 	]);
-
+	const { displayname } = userData;
 	const title = entitiesDecode(topic.title);
 	const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
@@ -129,7 +129,7 @@ Mentions.notify = async function (data) {
 
 	const filteredUids = await filterUidsAlreadyMentioned(uids, postData.pid);
 	if (filteredUids.length) {
-		await sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user_mentioned_you_in, ${author}, ${titleEscaped}]]`);
+		await sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user_mentioned_you_in, ${displayname}, ${titleEscaped}]]`);
 		await db.setAdd(`mentions:pid:${postData.pid}:uids`, filteredUids);
 	}
 
@@ -139,7 +139,7 @@ Mentions.notify = async function (data) {
 			const groupName = groupsToNotify[i].name;
 			const groupMentionSent = await db.isSetMember(`mentions:pid:${postData.pid}:groups`, groupName);
 			if (!groupMentionSent && memberUids.length) {
-				await sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${author} , ${groupName}, ${titleEscaped}]]`);
+				await sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${displayname} , ${groupName}, ${titleEscaped}]]`);
 				await db.setAdd(`mentions:pid:${postData.pid}:groups`, groupName);
 			}
 		}
