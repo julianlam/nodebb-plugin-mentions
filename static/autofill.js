@@ -33,12 +33,18 @@ $(document).ready(function () {
 						if (err) {
 							return callback([]);
 						}
+						const termLowerCase = term.toLocaleLowerCase();
+						const localMatches = localUserList.filter(
+							u => u.username.startsWith(termLowerCase)
+						);
 
-						mentions = mentions.concat(usersToMentions(sortUsers(users), helpers));
+						// remove local matches from search results
+						users = users.filter(u => !localMatches.find(lu => lu.uid === u.uid));
+						mentions = usersToMentions(sortUsers(localMatches).concat(sortUsers(users)), helpers);
 
 						// Add groups that start with the search term
 						const groupMentions = groupList.filter(function (groupName) {
-							return groupName.toLocaleLowerCase().startsWith(term.toLocaleLowerCase());
+							return groupName.toLocaleLowerCase().startsWith(termLowerCase);
 						}).sort(function (a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase() ? 1 : -1;
 						});
@@ -93,21 +99,28 @@ $(document).ready(function () {
 
 	function loadTopicUsers(element) {
 		require(['composer', 'alerts'], function (composer, alerts) {
-			const composerEl = element.parents('.composer').get(0);
-			if (!composerEl) {
-				return;
+			function findTid() {
+				const composerEl = element.parents('.composer').get(0);
+				if (composerEl) {
+					const uuid = composerEl.getAttribute('data-uuid');
+					const composerObj = composer.posts[uuid];
+					if (composerObj && composerObj.tid) {
+						return composerObj.tid;
+					}
+				}
+				if (ajaxify.data.template.topic) {
+					return ajaxify.data.tid;
+				}
+				return null;
 			}
 
-			const uuid = composerEl.getAttribute('data-uuid');
-			const composerObj = composer.posts[uuid];
-
-			if (!composerObj.tid) {
+			const tid = findTid();
+			if (!tid) {
 				localUserList = [];
 				return;
 			}
-
 			socket.emit('plugins.mentions.getTopicUsers', {
-				tid: composerObj.tid,
+				tid: tid,
 			}, function (err, users) {
 				if (err) {
 					return alerts.error(err);
