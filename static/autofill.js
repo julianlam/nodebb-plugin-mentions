@@ -35,7 +35,7 @@ $(document).ready(function () {
 						}
 						const termLowerCase = term.toLocaleLowerCase();
 						const localMatches = localUserList.filter(
-							u => u.username.startsWith(termLowerCase)
+							u => u.username.toLocaleLowerCase().startsWith(termLowerCase)
 						);
 
 						// remove local matches from search results
