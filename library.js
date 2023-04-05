@@ -273,9 +273,9 @@ Mentions.parseRaw = async (content) => {
 
 	matches = _.uniq(matches).map((match) => {
 		/**
-		 *	Javascript-favour of regex does not support lookaround,
-		 *	so need to clean up the cruft by discarding everthing
-		 *	before the @
+		 * Javascript-flavour of regex does not support lookaround,
+		 * so need to clean up the cruft by discarding everthing
+		 * before the @
 		 */
 		const atIndex = match.indexOf('@');
 		return atIndex !== 0 ? match.slice(atIndex) : match;
@@ -293,17 +293,18 @@ Mentions.parseRaw = async (content) => {
 
 		if (results.user.uid || results.groupExists) {
 			const regex = isLatinMention.test(match) ?
-				new RegExp(`(?:^|\\s|\>|;)${match}\\b`, 'g') :
-				new RegExp(`(?:^|\\s|\>|;)${match}`, 'g');
+				new RegExp(`(?:^|\\s|>|;)${match}((?=\\b)(?=[^-])|$)`, 'g') :
+				new RegExp(`(?:^|\\s|>|;)${match}`, 'g');
 
 			let skip = false;
 
 			splitContent = splitContent.map((c, i) => {
 				// *Might* not be needed anymore? Check pls...
 				if (skip || (i % 2) === 1) {
-					skip = c === '<code>';	// if code block detected, skip the content inside of it
+					skip = c === '<code>'; // if code block detected, skip the content inside of it
 					return c;
 				}
+
 				return c.replace(regex, (match) => {
 					// Again, cleaning up lookaround leftover bits
 					const atIndex = match.indexOf('@');
@@ -358,7 +359,7 @@ async function filterPrivilegedUids(uids, cid, toPid) {
 
 		const [isAdmin, isMod] = await Promise.all([
 			User.isAdministrator(uid),
-			User.isModerator(uid, cid),	// covers gmod as well
+			User.isModerator(uid, cid), // covers gmod as well
 		]);
 
 		return isAdmin || isMod ? false : uid;

@@ -165,6 +165,6 @@ describe('parser', () => {
 
 		const html = await main.parseRaw(md);
 
-		assert.strictEqual(html, 'This sentence contains two mentions: <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@595b422e-e</a> and <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@595b422e-e-two</a>');
+		assert.strictEqual(html, `This sentence contains two mentions: <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@${slug}</a> and <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/2">@${slug}-two</a>`);
 	});
 });
