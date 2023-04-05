@@ -3,9 +3,10 @@
 /* globals describe, it */
 
 const assert = require('assert');
-const XRegExp = require('xregexp');
 
-const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
+const main = require('../library');
+
+const regex = main._regex;
 
 /* const db = */require.main.require('./test/mocks/databasemock');
 

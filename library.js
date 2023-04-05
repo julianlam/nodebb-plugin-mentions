@@ -40,6 +40,7 @@ Mentions._defaults = {
 	overrideIgnores: 'off',
 	display: '',
 };
+Mentions._regex = regex;
 
 SocketPlugins.mentions = {};
 
