@@ -1,8 +1,11 @@
 'use strict';
 
-/* globals describe, it */
+/* globals describe, it, before */
 
 const assert = require('assert');
+
+const user = require.main.require('./src/user');
+const utils = require.main.require('./src/utils');
 
 const main = require('../library');
 
@@ -144,5 +147,24 @@ describe('splitter', () => {
 			assert.equal(result[1], '```\nvar a = \'@admin\';\n```');
 			assert.equal(result[2], '\nafter text');
 		});
+	});
+});
+
+describe('parser', () => {
+	let slug;
+
+	before(async () => {
+		slug = utils.generateUUID().slice(0, 10);
+		await Promise.all([slug, `${slug}-two`].map(async (username) => {
+			await user.create({ username });
+		}));
+	});
+
+	it('should properly parse both users even if one user\'s username is a subset of the other', async () => {
+		const md = `This sentence contains two mentions: @${slug} and @${slug}-two`;
+
+		const html = await main.parseRaw(md);
+
+		assert.strictEqual(html, 'This sentence contains two mentions: <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@595b422e-e</a> and <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@595b422e-e-two</a>');
 	});
 });
