@@ -27,7 +27,8 @@ const SocketPlugins = require.main.require('./src/socket.io/plugins');
 
 const utility = require('./lib/utility');
 
-const regex = XRegExp('(?:^|\\s|\\>|;)(@[\\p{L}\\d\\-_.]+)', 'g');
+const prefix = '(?:(^|\\p{^L}))';
+const regex = XRegExp(`${prefix}(@[\\p{L}\\d\\-_.]+)`, 'g');
 const isLatinMention = /@[\w\d\-_.]+$/;
 
 const Mentions = module.exports;
@@ -293,8 +294,8 @@ Mentions.parseRaw = async (content) => {
 
 		if (results.user.uid || results.groupExists) {
 			const regex = isLatinMention.test(match) ?
-				new RegExp(`(?:^|\\s|>|;)${match}((?=\\b)(?=[^-])|$)`, 'g') :
-				new RegExp(`(?:^|\\s|>|;)${match}`, 'g');
+				XRegExp(`${prefix}${match}((?=\\b)(?=[^-])|$)`, 'g') :
+				XRegExp(`${prefix}${match}`, 'g');
 
 			let skip = false;
 

@@ -1,6 +1,6 @@
 'use strict';
 
-/* globals describe, it, before */
+/* globals describe, it, beforeEach */
 
 const assert = require('assert');
 
@@ -16,23 +16,28 @@ const regex = main._regex;
 // use core slugify module
 const slugify = require.main.require('./src/slugify');
 
+const strings = [
+	'@testUser',
+	'@testUser some text',
+	'some text @testUser',
+	'<a href="/user/testuser">@testUser</a>',
+	'<a href="/user/testuser">@testUser</a> some text',
+	'some text <a href="/user/testuser">@testUser</a>',
+	'end of sentence. @testUser',
+	'@testUser.',
+	'@testUser\'s some text',
+	'> @testUser blockquoted',
+	'(@testUser) bracketed',
+	'elon makes me think of this emoji: 💩@testUser',
+];
+
 describe('regex', () => {
 	const matcher = new RegExp(regex);
-	const strings = [
-		'@testUser',
-		'@testUser some text',
-		'some text @testUser',
-		'<a href="/user/testuser">@testUser</a>',
-		'<a href="/user/testuser">@testUser</a> some text',
-		'some text <a href="/user/testuser">@testUser</a>',
-		'end of sentence. @testUser',
-		'@testUser.',
-		'@testUser\'s some text',
-	];
-	it('should match a mention in all strings', () => {
-		strings.forEach((string) => {
+
+	strings.forEach((string) => {
+		it('should match a mention in all test strings', () => {
 			const matches = string.match(matcher);
-			assert(matches);
+			assert(matches, `@testUser was not found in this string: ${string}`);
 			assert.equal(slugify(matches[0]), 'testuser');
 		});
 	});
@@ -152,19 +157,35 @@ describe('splitter', () => {
 
 describe('parser', () => {
 	let slug;
+	let uid;
 
-	before(async () => {
+	beforeEach(async () => {
 		slug = utils.generateUUID().slice(0, 10);
-		await Promise.all([slug, `${slug}-two`].map(async (username) => {
-			await user.create({ username });
-		}));
+		uid = await user.create({ username: slug });
 	});
 
 	it('should properly parse both users even if one user\'s username is a subset of the other', async () => {
+		await user.create({ username: `${slug}-two` });
 		const md = `This sentence contains two mentions: @${slug} and @${slug}-two`;
 
 		const html = await main.parseRaw(md);
 
 		assert.strictEqual(html, `This sentence contains two mentions: <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@${slug}</a> and <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/2">@${slug}-two</a>`);
+	});
+
+	strings.forEach((string) => {
+		it('should match correctly replace the mentions in all test strings', async () => {
+			const index = string.indexOf('@testUser');
+			let check = string;
+			if (!index || string[index - 1] !== '>') {
+				check = string.replace(/@testUser/g, `<a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/${uid}">@${slug}</a>`);
+				string = string.replace(/testUser/g, slug);
+			}
+			const html = await main.parseRaw(string);
+
+			assert(html);
+
+			assert.strictEqual(html, check);
+		});
 	});
 });
