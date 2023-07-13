@@ -16,6 +16,7 @@ const Topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
 const User = require.main.require('./src/user');
 const Groups = require.main.require('./src/groups');
+const Messaging = require.main.require('./src/messaging');
 const Notifications = require.main.require('./src/notifications');
 const Privileges = require.main.require('./src/privileges');
 const plugins = require.main.require('./src/plugins');
@@ -150,6 +151,43 @@ Mentions.notify = async function (data) {
 			}
 		}
 	}
+};
+
+Mentions.notifyMessage = async (hookData) => {
+	const cleanedContent = Mentions.clean(hookData.data.content, false, true, true);
+	let matches = cleanedContent.match(regex);
+	if (!Array.isArray(matches) || !matches.length) {
+		return;
+	}
+	const { message } = hookData;
+	const { roomId } = message;
+	matches = _.uniq(matches.map(slugify));
+	const [matchedUids, roomData] = await Promise.all([
+		getUidsToNotify(matches),
+		Messaging.getRoomData(roomId),
+	]);
+	if (!roomData || !matchedUids.length) {
+		return;
+	}
+	const checks = await Promise.all(
+		matchedUids.map(uid => !roomData.groups.length || Groups.isMemberOfAny(uid, roomData.groups))
+	);
+	const uidsToNotify = matchedUids.filter((uid, idx) => checks[idx]);
+	if (!uidsToNotify.length) {
+		return;
+	}
+	const roomName = validator.escape(String(roomData.roomName || `Room ${roomId}`));
+	const notifObj = await Notifications.create({
+		type: 'mention',
+		bodyShort: `[[notifications:user_mentioned_you_in, ${message.fromUser.displayname}, ${roomName}]]`,
+		bodyLong: message.content,
+		nid: `chat:room:${roomId}:mid:${message.messageId}:uid:${message.fromuid}`,
+		mid: message.messageId,
+		from: message.fromuid,
+		path: `/chats/${roomId}`,
+		importance: 6,
+	});
+	await Notifications.push(notifObj, uidsToNotify);
 };
 
 async function getUidsToNotify(matches) {

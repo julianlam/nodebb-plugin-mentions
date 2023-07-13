@@ -15,6 +15,7 @@
 		{ "hook": "action:post.save", "method": "notify" },
 		{ "hook": "action:post.edit", "method": "notify" },
 		{ "hook": "action:posts.purge", "method": "actionPostsPurge" },
+		{ "hook": "action:messaging.save", "method": "notifyMessage" },
 		{ "hook": "filter:notifications.addFilters", "method": "addFilters" },
 		{ "hook": "filter:user.notificationTypes", "method": "notificationTypes" },
 		{ "hook": "filter:users.addFields", "method": "addFields" }
