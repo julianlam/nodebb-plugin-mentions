@@ -4,7 +4,7 @@
 	<div class="row m-0">
 		<div id="spy-container" class="col-12 col-md-8 px-0 mb-4" tabindex="0">
 			<form role="form" class="mentions-settings">
-				<div class="mb-4">
+				<div id="general" class="mb-4">
 					<h5 class="fw-bold tracking-tight settings-header">General</h5>
 
 					<div class="mb-3 form-check">
@@ -38,7 +38,7 @@
 
 				</div>
 
-				<div class="mb-4">
+				<div id="restrictions" class="mb-4">
 					<h5 class="fw-bold tracking-tight settings-header">Restrictions</h5>
 
 					<div class="mb-3">
