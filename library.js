@@ -166,13 +166,22 @@ Mentions.notifyMessage = async (hookData) => {
 		getUidsToNotify(matches),
 		Messaging.getRoomData(roomId),
 	]);
-	if (!roomData || !matchedUids.length) {
+	if (!roomData || !matchedUids.length || !roomData.public) {
 		return;
 	}
-	const checks = await Promise.all(
-		matchedUids.map(uid => !roomData.groups.length || Groups.isMemberOfAny(uid, roomData.groups))
+	const io = require.main.require('./src/socket.io');
+
+	const [onlineUidsInRoom, isUserInRoom, checks] = await Promise.all([
+		io.getUidsInRoom(`chat_room_${roomId}`),
+		Messaging.isUsersInRoom(matchedUids, roomId),
+		Promise.all(matchedUids.map(
+			uid => !roomData.groups.length || Groups.isMemberOfAny(uid, roomData.groups)
+		)),
+	]);
+
+	const uidsToNotify = matchedUids.filter(
+		(uid, idx) => checks[idx] && isUserInRoom[idx] && !onlineUidsInRoom.includes(String(uid))
 	);
-	const uidsToNotify = matchedUids.filter((uid, idx) => checks[idx]);
 	if (!uidsToNotify.length) {
 		return;
 	}
