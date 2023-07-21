@@ -171,16 +171,20 @@ Mentions.notifyMessage = async (hookData) => {
 	}
 	const io = require.main.require('./src/socket.io');
 
-	const [onlineUidsInRoom, isUserInRoom, checks] = await Promise.all([
+	const [onlineUidsInRoom, isUserInRoom, notifSettings, checks] = await Promise.all([
 		io.getUidsInRoom(`chat_room_${roomId}`),
 		Messaging.isUsersInRoom(matchedUids, roomId),
+		Messaging.getUidsNotificationSetting(matchedUids, roomId),
 		Promise.all(matchedUids.map(
 			uid => !roomData.groups.length || Groups.isMemberOfAny(uid, roomData.groups)
 		)),
 	]);
 
 	const uidsToNotify = matchedUids.filter(
-		(uid, idx) => checks[idx] && isUserInRoom[idx] && !onlineUidsInRoom.includes(String(uid))
+		(uid, idx) => checks[idx] &&
+			isUserInRoom[idx] &&
+			!onlineUidsInRoom.includes(String(uid)) &&
+			notifSettings[idx] === Messaging.notificationSettings.ATMENTION
 	);
 	if (!uidsToNotify.length) {
 		return;
