@@ -194,7 +194,7 @@ Mentions.notifyMessage = async (hookData) => {
 		type: 'mention',
 		bodyShort: `[[notifications:user_mentioned_you_in, ${message.fromUser.displayname}, ${roomName}]]`,
 		bodyLong: message.content,
-		nid: `chat:room:${roomId}:mid:${message.messageId}:uid:${message.fromuid}`,
+		nid: `chat_${roomId}_${message.fromuid}_${message.messageId}`,
 		mid: message.messageId,
 		from: message.fromuid,
 		path: `/chats/${roomId}`,
