@@ -171,8 +171,9 @@ Mentions.notifyMessage = async (hookData) => {
 	}
 	const io = require.main.require('./src/socket.io');
 
-	const [onlineUidsInRoom, isUserInRoom, notifSettings, checks] = await Promise.all([
+	const [onlineUidsInRoom, fromUser, isUserInRoom, notifSettings, checks] = await Promise.all([
 		io.getUidsInRoom(`chat_room_${roomId}`),
+		User.getUserFields(message.fromuid, ['username']),
 		Messaging.isUsersInRoom(matchedUids, roomId),
 		Messaging.getUidsNotificationSetting(matchedUids, roomId),
 		Promise.all(matchedUids.map(
@@ -190,9 +191,10 @@ Mentions.notifyMessage = async (hookData) => {
 		return;
 	}
 	const roomName = validator.escape(String(roomData.roomName || `Room ${roomId}`));
+	const icon = Messaging.getRoomIcon(roomData);
 	const notifObj = await Notifications.create({
 		type: 'mention',
-		bodyShort: `[[notifications:user_mentioned_you_in, ${message.fromUser.displayname}, ${roomName}]]`,
+		bodyShort: `[[notifications:user_mentioned_you_in_room, ${fromUser.displayname}, ${icon}, ${roomName}]]`,
 		bodyLong: message.content,
 		nid: `chat_${roomId}_${message.fromuid}_${message.messageId}`,
 		mid: message.messageId,
