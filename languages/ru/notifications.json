@@ -1,6 +1,6 @@
 {
     "mentions": "Упоминания",
-    "user_mentioned_you_in": "<strong>%1</strong> упомянул Вас в <strong>%2</strong>",
-	"user_mentioned_group_in": "<strong>%1</strong> упомянул <strong>%2</strong> в <strong>%3</strong>",
+    "user-mentioned-you-in": "<strong>%1</strong> упомянул Вас в <strong>%2</strong>",
+	"user-mentioned-group-in": "<strong>%1</strong> упомянул <strong>%2</strong> в <strong>%3</strong>",
 	"notificationType_mention": "Когда кто-то вас упомянул"
 }

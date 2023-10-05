@@ -1,4 +1,4 @@
 {
     "mentions": "Menzioni",
-    "user_mentioned_you_in": "<strong>%1</strong> ti ha menzionato in <strong>%2</strong>"
+    "user-mentioned-you-in": "<strong>%1</strong> ti ha menzionato in <strong>%2</strong>"
 }

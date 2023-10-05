@@ -136,7 +136,7 @@ Mentions.notify = async function (data) {
 
 	const filteredUids = await filterUidsAlreadyMentioned(uids, postData.pid);
 	if (filteredUids.length) {
-		await sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user_mentioned_you_in, ${displayname}, ${titleEscaped}]]`);
+		await sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user-mentioned-you-in, ${displayname}, ${titleEscaped}]]`);
 		await db.setAdd(`mentions:pid:${postData.pid}:uids`, filteredUids);
 	}
 
@@ -146,7 +146,7 @@ Mentions.notify = async function (data) {
 			const groupName = groupsToNotify[i].name;
 			const groupMentionSent = await db.isSetMember(`mentions:pid:${postData.pid}:groups`, groupName);
 			if (!groupMentionSent && memberUids.length) {
-				await sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user_mentioned_group_in, ${displayname} , ${groupName}, ${titleEscaped}]]`);
+				await sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user-mentioned-group-in, ${displayname} , ${groupName}, ${titleEscaped}]]`);
 				await db.setAdd(`mentions:pid:${postData.pid}:groups`, groupName);
 			}
 		}
@@ -194,7 +194,7 @@ Mentions.notifyMessage = async (hookData) => {
 	const icon = Messaging.getRoomIcon(roomData);
 	const notifObj = await Notifications.create({
 		type: 'mention',
-		bodyShort: `[[notifications:user_mentioned_you_in_room, ${fromUser.displayname}, ${icon}, ${roomName}]]`,
+		bodyShort: `[[notifications:user-mentioned-you-in-room, ${fromUser.displayname}, ${icon}, ${roomName}]]`,
 		bodyLong: message.content,
 		nid: `chat_${roomId}_${message.fromuid}_${message.messageId}`,
 		mid: message.messageId,

@@ -1,6 +1,6 @@
 {
 	"mentions": "Bahsedilmeler",
-	"user_mentioned_you_in": "<strong>%1</strong> sizden şu konuda bahsetti: <strong>%2</strong>",
-	"user_mentioned_group_in": "<strong>%1</strong> kullanıcısı <strong>%2</strong> grubundan şu konuda bahsetti: <strong>%3</strong>",
+	"user-mentioned-you-in": "<strong>%1</strong> sizden şu konuda bahsetti: <strong>%2</strong>",
+	"user-mentioned-group-in": "<strong>%1</strong> kullanıcısı <strong>%2</strong> grubundan şu konuda bahsetti: <strong>%3</strong>",
 	"notificationType_mention": "Biri sizden bahsettiğinde"
 }

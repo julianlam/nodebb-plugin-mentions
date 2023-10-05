@@ -1,6 +1,6 @@
 {
 	"mentions": "Mentions",
-	"user_mentioned_you_in": "<strong>%1</strong> vous a mentionné dans <strong>%2</strong>",
-	"user_mentioned_group_in": "<strong>%1</strong> a mentionné <strong>%2</strong> dans <strong>%3</strong>",
+	"user-mentioned-you-in": "<strong>%1</strong> vous a mentionné dans <strong>%2</strong>",
+	"user-mentioned-group-in": "<strong>%1</strong> a mentionné <strong>%2</strong> dans <strong>%3</strong>",
 	"notificationType_mention": "Lorsque quelqu'un vous mentionne"
 }

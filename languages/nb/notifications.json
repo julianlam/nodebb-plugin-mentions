@@ -1,6 +1,6 @@
 {
     "mentions": "Omtaler",
-    "user_mentioned_you_in": "<strong>%1</strong> nevnte deg i <strong>%2</strong>",
-    "user_mentioned_group_in": "<strong>%1</strong> nevnte <strong>%2</strong> i <strong>%3</strong>",
+    "user-mentioned-you-in": "<strong>%1</strong> nevnte deg i <strong>%2</strong>",
+    "user-mentioned-group-in": "<strong>%1</strong> nevnte <strong>%2</strong> i <strong>%3</strong>",
     "notificationType_mention": "Når noen nevner deg"
 }
