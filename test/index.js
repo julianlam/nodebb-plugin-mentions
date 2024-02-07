@@ -158,10 +158,12 @@ describe('splitter', () => {
 describe('parser', () => {
 	let slug;
 	let uid;
+	let emailUid;
 
 	beforeEach(async () => {
 		slug = utils.generateUUID().slice(0, 10);
 		uid = await user.create({ username: slug });
+		emailUid = await user.create({ username: `${slug}@test.nodebb.org` });
 	});
 
 	it('should properly parse both users even if one user\'s username is a subset of the other', async () => {
@@ -180,6 +182,19 @@ describe('parser', () => {
 			if (!index || string[index - 1] !== '>') {
 				check = string.replace(/@testUser/g, `<a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/${uid}">@${slug}</a>`);
 				string = string.replace(/testUser/g, slug);
+			}
+			const html = await main.parseRaw(string);
+
+			assert(html);
+
+			assert.strictEqual(html, check);
+		});
+		it('should match correctly email-like mentions in all test strings', async () => {
+			const index = string.indexOf('@testUser');
+			let check = string;
+			if (!index || string[index - 1] !== '>') {
+				check = string.replace(/@testUser/g, `<a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/${emailUid}">@${slug}@test.nodebb.org</a>`);
+				string = string.replace(/testUser/g, `${slug}@test.nodebb.org`);
 			}
 			const html = await main.parseRaw(string);
 
