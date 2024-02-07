@@ -3,7 +3,6 @@
 'use strict';
 
 const _ = require('lodash');
-const XRegExp = require('xregexp');
 const validator = require('validator');
 const entitiesDecode = require('html-entities').decode;
 
@@ -29,12 +28,12 @@ const SocketPlugins = require.main.require('./src/socket.io/plugins');
 const utility = require('./lib/utility');
 
 const parts = {
-	before: '(?:(^|\\p{^L}))', // a single unicode non-letter character or start of line
-	main: '(@[\\p{L}\\d\\-_.]+)', // unicode letters, numbers, dashes, underscores, or periods
-	after: '((?=\\b)(?=[^-])|$)', // used to figure out where latin mentions end
+	before: '(?:(^|\\P{L}))', // a single unicode non-letter character or start of line
+	main: '(@[\\p{L}\\d\\-_.@]+)', // unicode letters, numbers, dashes, underscores, or periods
+	after: '((?=\\b)(?=[^-])|(?=[^\\p{L}\\d\\-_.@])|$)', // used to figure out where latin mentions end
 };
-const regex = XRegExp(`${parts.before}${parts.main}`, 'g');
-const isLatinMention = /@[\w\d\-_.]+$/;
+const regex = RegExp(`${parts.before}${parts.main}`, 'gu');
+const isLatinMention = /@[\w\d\-_.@]+$/;
 
 const Mentions = module.exports;
 
@@ -342,7 +341,6 @@ Mentions.parseRaw = async (content) => {
 	await Promise.all(matches.map(async (match) => {
 		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
-
 		const uid = await User.getUidByUserslug(slug);
 		const results = await utils.promiseParallel({
 			groupExists: Groups.existsBySlug(slug),
@@ -351,11 +349,9 @@ Mentions.parseRaw = async (content) => {
 
 		if (results.user.uid || results.groupExists) {
 			const regex = isLatinMention.test(match) ?
-				XRegExp(`${parts.before}${match}${parts.after}`, 'g') :
-				XRegExp(`${parts.before}${match}`, 'g');
-
+				RegExp(`${parts.before}${match}${parts.after}`, 'gu') :
+				RegExp(`${parts.before}${match}`, 'gu');
 			let skip = false;
-
 			splitContent = splitContent.map((c, i) => {
 				// *Might* not be needed anymore? Check pls...
 				if (skip || (i % 2) === 1) {
