@@ -11,6 +11,7 @@ const winston = require.main.require('winston');
 
 const db = require.main.require('./src/database');
 const api = require.main.require('./src/api');
+const meta = require.main.require('./src/meta');
 const Topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
 const User = require.main.require('./src/user');
@@ -78,34 +79,57 @@ function getNoMentionGroups() {
 	return noMentionGroups;
 }
 
-Mentions.notify = async function (data) {
-	const postData = data.post;
-	const postOwner = parseInt(postData.uid, 10);
-	const cleanedContent = Mentions.clean(postData.content, true, true, true);
-	let matches = cleanedContent.match(regex);
-	if (!matches) {
-		return;
-	}
+Mentions.notify = async function ({ post }) {
+	const postOwner = parseInt(post.uid, 10);
 
-	const noMentionGroups = getNoMentionGroups();
-	matches = _.uniq(matches.map(match => slugify(match))).filter(match => match && !noMentionGroups.includes(match));
-	if (!matches.length) {
-		return;
-	}
+	let uidsToNotify;
+	let groupsToNotify;
+	if (utils.isNumber(post.pid)) {
+		const cleanedContent = Mentions.clean(post.content, true, true, true);
+		let matches = cleanedContent.match(regex);
+		if (!matches) {
+			return;
+		}
 
-	const [uidsToNotify, groupsToNotify] = await Promise.all([
-		getUidsToNotify(matches),
-		getGroupsToNotify(matches),
-	]);
+		const noMentionGroups = getNoMentionGroups();
+		matches = _.uniq(matches.map(match => slugify(match))).filter(match => match && !noMentionGroups.includes(match));
+		if (!matches.length) {
+			return;
+		}
+
+		([uidsToNotify, groupsToNotify] = await Promise.all([
+			getUidsToNotify(matches),
+			getGroupsToNotify(matches),
+		]));
+	} else if (post._activitypub) { // ActivityPub
+		const { tag } = post._activitypub;
+		groupsToNotify = []; // cannot mention groups for now
+
+		if (tag.length) {
+			const slugs = tag.reduce((slugs, tag) => {
+				if (tag.type === 'Mention') {
+					const [slug, hostname] = tag.name.slice(1).split('@');
+					if (hostname === nconf.get('url_parsed').hostname) {
+						slugs.push(slug);
+					}
+				}
+				return slugs;
+			}, []);
+
+			uidsToNotify = slugs.length ? await db.sortedSetScores('userslug:uid', slugs) : [];
+		} else {
+			uidsToNotify = [];
+		}
+	}
 
 	if (!uidsToNotify.length && !groupsToNotify.length) {
 		return;
 	}
 
 	const [topic, userData, topicFollowers] = await Promise.all([
-		Topics.getTopicFields(postData.tid, ['title', 'cid']),
-		User.getUserFields(postData.uid, ['username']),
-		Mentions._settings.disableFollowedTopics === 'on' ? Topics.getFollowers(postData.tid) : [],
+		Topics.getTopicFields(post.tid, ['title', 'cid']),
+		User.getUserFields(post.uid, ['username']),
+		Mentions._settings.disableFollowedTopics === 'on' ? Topics.getFollowers(post.tid) : [],
 	]);
 	const { displayname } = userData;
 	const title = entitiesDecode(topic.title);
@@ -116,8 +140,8 @@ Mentions.notify = async function (data) {
 	);
 
 	if (Mentions._settings.privilegedDirectReplies === 'on') {
-		const toPid = await posts.getPostField(data.post.pid, 'toPid');
-		uids = await filterPrivilegedUids(uids, data.post.cid, toPid);
+		const toPid = await posts.getPostField(post.pid, 'toPid');
+		uids = await filterPrivilegedUids(uids, post.cid, toPid);
 	}
 
 	const groupMemberUids = {};
@@ -133,20 +157,20 @@ Mentions.notify = async function (data) {
 		});
 	});
 
-	const filteredUids = await filterUidsAlreadyMentioned(uids, postData.pid);
+	const filteredUids = await filterUidsAlreadyMentioned(uids, post.pid);
 	if (filteredUids.length) {
-		await sendNotificationToUids(postData, filteredUids, 'user', `[[notifications:user-mentioned-you-in, ${displayname}, ${titleEscaped}]]`);
-		await db.setAdd(`mentions:pid:${postData.pid}:uids`, filteredUids);
+		await sendNotificationToUids(post, filteredUids, 'user', `[[notifications:user-mentioned-you-in, ${displayname}, ${titleEscaped}]]`);
+		await db.setAdd(`mentions:pid:${post.pid}:uids`, filteredUids);
 	}
 
 	for (let i = 0; i < groupsToNotify.length; ++i) {
 		if (groupsToNotify[i] && groupsToNotify[i].name && groupsToNotify[i].members) {
 			const memberUids = groupsToNotify[i].members;
 			const groupName = groupsToNotify[i].name;
-			const groupMentionSent = await db.isSetMember(`mentions:pid:${postData.pid}:groups`, groupName);
+			const groupMentionSent = await db.isSetMember(`mentions:pid:${post.pid}:groups`, groupName);
 			if (!groupMentionSent && memberUids.length) {
-				await sendNotificationToUids(postData, memberUids, groupName, `[[notifications:user-mentioned-group-in, ${displayname} , ${groupName}, ${titleEscaped}]]`);
-				await db.setAdd(`mentions:pid:${postData.pid}:groups`, groupName);
+				await sendNotificationToUids(post, memberUids, groupName, `[[notifications:user-mentioned-group-in, ${displayname} , ${groupName}, ${titleEscaped}]]`);
+				await db.setAdd(`mentions:pid:${post.pid}:groups`, groupName);
 			}
 		}
 	}
@@ -295,7 +319,7 @@ async function createNotification(postData, nidType, notificationText) {
 		pid: postData.pid,
 		tid: postData.tid,
 		from: postData.uid,
-		path: `/post/${postData.pid}`,
+		path: `/post/${encodeURIComponent(postData.pid)}`,
 		topicTitle: title ? utils.decodeHTMLEntities(title) : title,
 		importance: 6,
 	});
@@ -315,14 +339,41 @@ function removePunctuationSuffix(string) {
 	return string.replace(/[!?.]*$/, '');
 }
 
-Mentions.parseRaw = async (content) => {
-	let splitContent = utility.split(content, false, false, true);
+function getMatches(content, isMarkdown = false) {
+	const splitContent = utility.split(content, isMarkdown, false, true);
 	let matches = [];
 	splitContent.forEach((cleanedContent, i) => {
 		if ((i % 2) === 0) {
 			matches = matches.concat(cleanedContent.match(regex) || []);
 		}
 	});
+
+	return { splitContent, matches };
+}
+
+Mentions.getMatches = async (content) => {
+	// Exported method only accepts markdown, also filters out dupes and matches to ensure slugs exist
+	let { matches } = getMatches(content, true);
+	matches = await filterMatches(matches);
+	const ids = await Promise.all(matches.map(async m => User.getUidByUserslug(m.slice(1).toLowerCase())));
+	matches = matches.map((slug, idx) => (ids[idx] ? {
+		id: ids[idx],
+		slug,
+	} : null)).filter(Boolean);
+
+	return new Set(matches);
+};
+
+async function filterMatches(matches) {
+	matches = Array.from(new Set(matches));
+	const exists = await Promise.all(matches.map(match => meta.userOrGroupExists(match.slice(1))));
+
+	return matches.filter((m, i) => exists[[i]]);
+}
+
+Mentions.parseRaw = async (content) => {
+	// Note: Mentions.clean explicitly can't be called here because I need the content unstripped
+	let { splitContent, matches } = getMatches(content);
 
 	if (!matches.length) {
 		return content;
@@ -342,12 +393,18 @@ Mentions.parseRaw = async (content) => {
 		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
 		const uid = await User.getUidByUserslug(slug);
-		const results = await utils.promiseParallel({
+		const { groupExists, user } = await utils.promiseParallel({
 			groupExists: Groups.existsBySlug(slug),
 			user: User.getUserFields(uid, ['uid', 'username', 'fullname']),
 		});
 
-		if (results.user.uid || results.groupExists) {
+		if (user.uid || groupExists) {
+			let url;
+			if (user.uid) {
+				url = utils.isNumber(user.uid) ? `${nconf.get('url')}/uid/${user.uid}` : user.uid;
+			} else {
+				url = `${nconf.get('url')}/groups/${slug}`;
+			}
 			const regex = isLatinMention.test(match) ?
 				RegExp(`${parts.before}${match}${parts.after}`, 'gu') :
 				RegExp(`${parts.before}${match}`, 'gu');
@@ -364,20 +421,18 @@ Mentions.parseRaw = async (content) => {
 					const atIndex = match.indexOf('@');
 					const plain = match.slice(0, atIndex);
 					match = match.slice(atIndex);
-					if (results.user.uid) {
+					if (user.uid) {
 						switch (Mentions._settings.display) {
 							case 'fullname':
-								match = results.user.fullname || match;
+								match = user.fullname || match;
 								break;
 							case 'username':
-								match = results.user.username;
+								match = user.username;
 								break;
 						}
 					}
 
-					const str = results.user.uid ?
-						`<a class="plugin-mentions-user plugin-mentions-a" href="${nconf.get('url')}/uid/${results.user.uid}">${match}</a>` :
-						`<a class="plugin-mentions-group plugin-mentions-a" href="${nconf.get('url')}/groups/${slug}">${match}</a>`;
+					const str = `<a class="plugin-mentions-${user.uid ? 'user' : 'group'} plugin-mentions-a" href="${url}">${match}</a>`;
 
 					return plain + str;
 				});
