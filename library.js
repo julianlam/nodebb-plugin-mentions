@@ -432,7 +432,7 @@ Mentions.parseRaw = async (content) => {
 						}
 					}
 
-					const str = `<a class="plugin-mentions-${user.uid ? 'user' : 'group'} plugin-mentions-a" href="${url}">${match}</a>`;
+					const str = `<a class="mention plugin-mentions-${user.uid ? 'user' : 'group'} plugin-mentions-a" href="${url}">${match}</a>`;
 
 					return plain + str;
 				});
