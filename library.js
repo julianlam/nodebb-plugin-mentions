@@ -105,7 +105,7 @@ Mentions.notify = async function ({ post }) {
 		const { tag } = post._activitypub;
 		groupsToNotify = []; // cannot mention groups for now
 
-		if (tag.length) {
+		if (Array.isArray(tag) && tag.length) {
 			const slugs = tag.reduce((slugs, tag) => {
 				if (tag.type === 'Mention') {
 					const [slug, hostname] = tag.name.slice(1).split('@');
