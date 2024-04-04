@@ -395,13 +395,13 @@ Mentions.parseRaw = async (content) => {
 		const uid = await User.getUidByUserslug(slug);
 		const { groupExists, user } = await utils.promiseParallel({
 			groupExists: Groups.existsBySlug(slug),
-			user: User.getUserFields(uid, ['uid', 'username', 'fullname']),
+			user: User.getUserFields(uid, ['uid', 'username', 'fullname', 'url']),
 		});
 
 		if (user.uid || groupExists) {
 			let url;
 			if (user.uid) {
-				url = utils.isNumber(user.uid) ? `${nconf.get('url')}/uid/${user.uid}` : user.uid;
+				url = utils.isNumber(user.uid) ? `${nconf.get('url')}/uid/${user.uid}` : (user.url || user.uid);
 			} else {
 				url = `${nconf.get('url')}/groups/${slug}`;
 			}
