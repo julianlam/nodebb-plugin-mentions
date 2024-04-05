@@ -412,7 +412,6 @@ Mentions.parseRaw = async (content) => {
 
 				case !!cid: {
 					url = `${nconf.get('url')}/category/${category.slug}`;
-					console.log('setting url', url);
 					break;
 				}
 
