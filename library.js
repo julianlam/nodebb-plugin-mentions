@@ -12,6 +12,7 @@ const winston = require.main.require('winston');
 const db = require.main.require('./src/database');
 const api = require.main.require('./src/api');
 const meta = require.main.require('./src/meta');
+const categories = require.main.require('./src/categories');
 const Topics = require.main.require('./src/topics');
 const posts = require.main.require('./src/posts');
 const User = require.main.require('./src/user');
@@ -393,18 +394,34 @@ Mentions.parseRaw = async (content) => {
 		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
 		const uid = await User.getUidByUserslug(slug);
-		const { groupExists, user } = await utils.promiseParallel({
+		const cid = await categories.getCidByHandle(slug);
+		const { groupExists, user, category } = await utils.promiseParallel({
 			groupExists: Groups.existsBySlug(slug),
 			user: User.getUserFields(uid, ['uid', 'username', 'fullname', 'url']),
+			category: categories.getCategoryFields(cid, ['slug']),
 		});
 
-		if (user.uid || groupExists) {
+		if (uid || groupExists || cid) {
 			let url;
-			if (user.uid) {
-				url = utils.isNumber(user.uid) ? `${nconf.get('url')}/uid/${user.uid}` : (user.url || user.uid);
-			} else {
-				url = `${nconf.get('url')}/groups/${slug}`;
+
+			switch (true) {
+				case !!uid: {
+					url = utils.isNumber(user.uid) ? `${nconf.get('url')}/uid/${user.uid}` : (user.url || user.uid);
+					break;
+				}
+
+				case !!cid: {
+					url = `${nconf.get('url')}/category/${category.slug}`;
+					console.log('setting url', url);
+					break;
+				}
+
+				case !!groupExists: {
+					url = `${nconf.get('url')}/groups/${slug}`;
+					break;
+				}
 			}
+
 			const regex = isLatinMention.test(match) ?
 				RegExp(`${parts.before}${match}${parts.after}`, 'gu') :
 				RegExp(`${parts.before}${match}`, 'gu');

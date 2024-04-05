@@ -3,6 +3,8 @@
 
 $(document).ready(function () {
 	let groupList = [];
+	let categoryList;
+	const categorySlugMap = new Map();
 	let localUserList = [];
 
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
@@ -10,6 +12,10 @@ $(document).ready(function () {
 
 		if (!groupList.length) {
 			loadGroupList();
+		}
+
+		if (!categoryList) {
+			loadCategoryList();
 		}
 
 		let slugify;
@@ -20,7 +26,7 @@ $(document).ready(function () {
 					slugify = _slugify;
 					let mentions = [];
 					if (!term) {
-						mentions = usersToMentions(sortUsers(localUserList), helpers);
+						mentions = entriesToMentions(sortEntries(localUserList), helpers);
 						return callback(mentions);
 					}
 
@@ -37,10 +43,12 @@ $(document).ready(function () {
 						const localMatches = localUserList.filter(
 							u => u.username.toLocaleLowerCase().startsWith(termLowerCase)
 						);
+						const categoryMatches = categoryList.filter(c => c.handle.startsWith(termLowerCase));
 
-						// remove local matches from search results
+						// remove local matches from search results, add category matches
 						users = users.filter(u => !localMatches.find(lu => lu.uid === u.uid));
-						mentions = usersToMentions(sortUsers(localMatches).concat(sortUsers(users)), helpers);
+						users = sortEntries(localMatches).concat(sortEntries([...users, ...categoryMatches]));
+						mentions = entriesToMentions(users, helpers);
 
 						// Add groups that start with the search term
 						const groupMentions = groupList.filter(function (groupName) {
@@ -62,7 +70,14 @@ $(document).ready(function () {
 				mention = $('<div/>').html(mention);
 				// Strip letter avatar
 				mention.find('span').remove();
-				return '@' + slugify(mention.text(), true) + ' ';
+
+				const text = mention.text().trim();
+				const categoryHandle = categorySlugMap.get(text.toLowerCase());
+				if (categoryHandle) {
+					return `@${categoryHandle}`;
+				}
+
+				return '@' + slugify(text, true) + ' ';
 			},
 			cache: true,
 		};
@@ -75,23 +90,25 @@ $(document).ready(function () {
 		composer.attr('data-mentions', '1');
 	});
 
-	function sortUsers(users) {
-		return users.sort(function (user1, user2) {
-			return user1.username.toLocaleLowerCase() > user2.username.toLocaleLowerCase() ? 1 : -1;
+	function sortEntries(entries) {
+		return entries.sort(function (entry1, entry2) {
+			const comparator1 = entry1.username || entry1.name;
+			const comparator2 = entry2.username || entry2.name;
+			return comparator1.toLocaleLowerCase() > comparator2.toLocaleLowerCase() ? 1 : -1;
 		});
 	}
 
-	function usersToMentions(users, helpers) {
-		return users.reduce(function (carry, user) {
+	function entriesToMentions(entries, helpers) {
+		return entries.reduce(function (carry, entry) {
 			// Don't add current user to suggestions
-			if (app.user.username && app.user.username === user.username) {
+			if (app.user.username && app.user.username === entry.username) {
 				return carry;
 			}
 
-			// Format suggestions as 'avatar username (fullname)'
-			const avatar = helpers.buildAvatar(user, '24px', true);
-			const fullname = user.fullname ? `(${user.fullname})` : '';
-			carry.push(`${avatar} ${user.username} ${helpers.escape(fullname)}`);
+			// Format suggestions as 'avatar username/name (fullname)'
+			const avatar = entry.uid ? helpers.buildAvatar(entry, '24px', true) : '';
+			const fullname = entry.fullname ? `(${entry.fullname})` : '';
+			carry.push(`${avatar} ${entry.username || entry.name} ${helpers.escape(fullname)}`);
 
 			return carry;
 		}, []);
@@ -139,6 +156,16 @@ $(document).ready(function () {
 				return;
 			}
 			groupList = groupNames;
+		});
+	}
+
+	function loadCategoryList() {
+		require(['api'], async (api) => {
+			const { categories } = await api.get('/categories');
+			categoryList = categories;
+			categories.forEach((category) => {
+				categorySlugMap.set(category.name.toLowerCase(), category.handle);
+			});
 		});
 	}
 });
