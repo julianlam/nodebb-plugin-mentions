@@ -406,7 +406,7 @@ Mentions.parseRaw = async (content) => {
 
 			switch (true) {
 				case !!uid: {
-					url = utils.isNumber(user.uid) ? `${nconf.get('url')}/uid/${user.uid}` : (user.url || user.uid);
+					url = utils.isNumber(user.uid) ? `${nconf.get('url')}/user/${slug}` : (user.url || user.uid);
 					break;
 				}
 
