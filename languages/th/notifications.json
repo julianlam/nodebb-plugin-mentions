@@ -1,0 +1,7 @@
+{
+	"mentions": "การถูกกล่าวถึง",
+	"user-mentioned-you-in": "<strong>%1</strong> ได้กล่าวถึงคุณใน <strong>%2</strong>",
+	"user-mentioned-you-in-room": "<strong>%1</strong> ได้กล่าวถึงคุณใน <strong class=\"text-nowrap\"><i class=\"fa %2\"></i>%3</strong>",
+	"user-mentioned-group-in": "<strong>%1</strong> ได้กล่าวถึง <strong>%2</strong> ใน <strong>%3</strong>",
+	"notificationType-mention": "เมื่อบางคนได้กล่าวถึงคุณ"
+}
