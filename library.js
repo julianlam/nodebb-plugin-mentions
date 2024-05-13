@@ -93,7 +93,11 @@ Mentions.notify = async function ({ post }) {
 		}
 
 		const noMentionGroups = getNoMentionGroups();
-		matches = _.uniq(matches.map(match => slugify(match))).filter(match => match && !noMentionGroups.includes(match));
+		matches = _.uniq(
+			matches
+				.map(match => slugify(match.slice(1)))
+				.filter(match => match && !noMentionGroups.includes(match))
+		);
 		if (!matches.length) {
 			return;
 		}
@@ -185,7 +189,8 @@ Mentions.notifyMessage = async (hookData) => {
 	}
 	const { message } = hookData;
 	const { roomId } = message;
-	matches = _.uniq(matches.map(slugify));
+	matches = _.uniq(matches.map(match => slugify(match.slice(1))));
+
 	const [matchedUids, roomData] = await Promise.all([
 		getUidsToNotify(matches),
 		Messaging.getRoomData(roomId),
