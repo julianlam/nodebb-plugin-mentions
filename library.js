@@ -5,6 +5,7 @@
 const _ = require('lodash');
 const validator = require('validator');
 const entitiesDecode = require('html-entities').decode;
+const cheerio = require('cheerio');
 
 const nconf = require.main.require('nconf');
 const winston = require.main.require('winston');
@@ -332,11 +333,12 @@ async function createNotification(postData, nidType, notificationText) {
 }
 
 Mentions.parsePost = async (data) => {
-	if (!data || !data.postData || !data.postData.content) {
+	const { postData, type } = data;
+	if (!postData.content) {
 		return data;
 	}
 
-	const parsed = await Mentions.parseRaw(data.postData.content);
+	const parsed = await Mentions.parseRaw(postData.content, type);
 	data.postData.content = parsed;
 	return data;
 };
@@ -345,7 +347,7 @@ function removePunctuationSuffix(string) {
 	return string.replace(/[!?.]*$/, '');
 }
 
-function getMatches(content, isMarkdown = false) {
+async function getMatches(content, isMarkdown = false) {
 	const splitContent = utility.split(content, isMarkdown, false, true);
 	let matches = [];
 	splitContent.forEach((cleanedContent, i) => {
@@ -354,12 +356,38 @@ function getMatches(content, isMarkdown = false) {
 		}
 	});
 
-	return { splitContent, matches };
+	const $ = cheerio.load(splitContent.join(''));
+	const anchors = $('a');
+	const urls = new Set();
+	Array.from(anchors).forEach((anchor) => {
+		const text = $(anchor).prop('innerText');
+		const match = text.match(regex);
+		if (match) {
+			urls.add($(anchor).attr('href'));
+		}
+	});
+
+	// Filter out urls that don't backreference to a remote id
+	const backrefs = await db.getObjectFields('remoteUrl:uid', Array.from(urls));
+	const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', Array.from(urls));
+	const urlMap = new Map();
+	Array.from(urls).map(async (url, index) => {
+		if (backrefs[url] || urlAsIdExists[index]) {
+			urlMap.set(url, backrefs[url] || url);
+		}
+	});
+	let slugs = await User.getUsersFields(Array.from(urlMap.values()), ['userslug']);
+	slugs = slugs.map(({ userslug }) => userslug);
+	Array.from(urlMap.keys()).forEach((url, idx) => {
+		urlMap.set(url, `/user/${encodeURIComponent(slugs[idx])}`);
+	});
+
+	return { splitContent, matches, urlMap };
 }
 
 Mentions.getMatches = async (content) => {
 	// Exported method only accepts markdown, also filters out dupes and matches to ensure slugs exist
-	let { matches } = getMatches(content, true);
+	let { matches } = await getMatches(content, true);
 	matches = await filterMatches(matches);
 	const ids = await Promise.all(matches.map(async m => User.getUidByUserslug(m.slice(1).toLowerCase())));
 	matches = matches.map((slug, idx) => (ids[idx] ? {
@@ -377,11 +405,15 @@ async function filterMatches(matches) {
 	return matches.filter((m, i) => exists[[i]]);
 }
 
-Mentions.parseRaw = async (content) => {
-	// Note: Mentions.clean explicitly can't be called here because I need the content unstripped
-	let { splitContent, matches } = getMatches(content);
+Mentions.parseRaw = async (content, type = 'default') => {
+	if (type === 'plaintext') {
+		return content;
+	}
 
-	if (!matches.length) {
+	// Note: Mentions.clean explicitly can't be called here because I need the content unstripped
+	let { splitContent, matches, urlMap } = await getMatches(content);
+
+	if (!matches.length && !urlMap.size) {
 		return content;
 	}
 
@@ -395,6 +427,7 @@ Mentions.parseRaw = async (content) => {
 		return atIndex !== 0 ? match.slice(atIndex) : match;
 	});
 
+	// Convert matches to anchor html
 	await Promise.all(matches.map(async (match) => {
 		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
@@ -402,7 +435,7 @@ Mentions.parseRaw = async (content) => {
 		const cid = await categories.getCidByHandle(slug);
 		const { groupExists, user, category } = await utils.promiseParallel({
 			groupExists: Groups.existsBySlug(slug),
-			user: User.getUserFields(uid, ['uid', 'username', 'fullname', 'url']),
+			user: User.getUserFields(uid, ['uid', 'username', 'userslug', 'fullname', 'url']),
 			category: categories.getCategoryFields(cid, ['slug']),
 		});
 
@@ -411,17 +444,20 @@ Mentions.parseRaw = async (content) => {
 
 			switch (true) {
 				case !!uid: {
-					url = utils.isNumber(user.uid) ? `${nconf.get('url')}/user/${slug}` : (user.url || user.uid);
+					url = `/user/${encodeURIComponent(user.userslug)}`;
+					if (type.startsWith('activitypub') && !utils.isNumber(uid)) {
+						url = user.url || user.uid;
+					}
 					break;
 				}
 
 				case !!cid: {
-					url = `${nconf.get('url')}/category/${category.slug}`;
+					url = `/category/${category.slug}`;
 					break;
 				}
 
 				case !!groupExists: {
-					url = `${nconf.get('url')}/groups/${slug}`;
+					url = `/groups/${slug}`;
 					break;
 				}
 			}
@@ -461,7 +497,20 @@ Mentions.parseRaw = async (content) => {
 		}
 	}));
 
-	return splitContent.join('');
+	const parsed = splitContent.join('');
+
+	// Modify existing anchors to local profile
+	const $ = cheerio.load(parsed);
+	const anchors = $('a');
+	Array.from(anchors).forEach((anchor) => {
+		const $anchor = $(anchor);
+		const url = $anchor.attr('href');
+		if (urlMap.has(url)) {
+			$anchor.attr('href', urlMap.get(url));
+		}
+	});
+
+	return $.html();
 };
 
 Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
