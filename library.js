@@ -5,7 +5,6 @@
 const _ = require('lodash');
 const validator = require('validator');
 const entitiesDecode = require('html-entities').decode;
-const cheerio = require('cheerio');
 
 const nconf = require.main.require('nconf');
 const winston = require.main.require('winston');
@@ -37,7 +36,7 @@ const parts = {
 };
 const regex = RegExp(`${parts.before}${parts.main}`, 'gu');
 const isLatinMention = /@[\w\d\-_.@]+$/;
-const hasAnchors = /<a.*>.*<\/a>/i;
+const anchorRegex = /<a.*?href=['"](.+?)['"].*?>(.*?)<\/a>/ig;
 
 const Mentions = module.exports;
 
@@ -357,23 +356,24 @@ async function getMatches(content, isMarkdown = false) {
 		}
 	});
 
+	// Early return
+	if (isMarkdown) {
+		return { splitContent, matches, urlMap: new Map() };
+	}
+
+	// Find matches via backreferenced href
 	const joined = splitContent.join('');
-	const parseAnchors = joined.match(hasAnchors);
+	const anchors = new Set(joined.matchAll(anchorRegex));
 	const urlMap = new Map();
-	if (!isMarkdown && parseAnchors) {
-		const $ = cheerio.load(splitContent.join(''));
-		const anchors = $('a');
-		const urls = new Set();
-		Array.from(anchors).forEach((anchor) => {
-			const text = $(anchor).prop('innerText');
-			const match = text.match(regex);
-			if (match) {
-				urls.add($(anchor).attr('href'));
-			}
+	const urls = new Set();
+	if (!isMarkdown && anchors.size) {
+		anchors.forEach((match) => {
+			const [, url] = match;
+			urls.add(url);
 		});
 
 		// Filter out urls that don't backreference to a remote id
-		const backrefs = await db.getObjectFields('remoteUrl:uid', Array.from(urls));
+		const backrefs = urls.size ? await db.getObjectFields('remoteUrl:uid', Array.from(urls)) : {};
 		const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', Array.from(urls));
 		Array.from(urls).map(async (url, index) => {
 			if (backrefs[url] || urlAsIdExists[index]) {
@@ -502,20 +502,25 @@ Mentions.parseRaw = async (content, type = 'default') => {
 		}
 	}));
 
-	const parsed = splitContent.join('');
+	let parsed = splitContent.join('');
+
+	// Early return if no urls to modify
+	if (!urlMap.size) {
+		return parsed;
+	}
 
 	// Modify existing anchors to local profile
-	const $ = cheerio.load(parsed);
-	const anchors = $('a');
-	Array.from(anchors).forEach((anchor) => {
-		const $anchor = $(anchor);
-		const url = $anchor.attr('href');
-		if (urlMap.has(url)) {
-			$anchor.attr('href', urlMap.get(url));
-		}
+	const anchors = new Set(Array.from(parsed.matchAll(anchorRegex)).reverse());
+	if (!anchors.size) {
+		return parsed;
+	}
+
+	anchors.forEach(([match, href]) => {
+		const replacement = match.replace(href, urlMap.get(href));
+		parsed = parsed.split(match).join(replacement);
 	});
 
-	return $.html();
+	return parsed;
 };
 
 Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
