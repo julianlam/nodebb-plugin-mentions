@@ -37,6 +37,7 @@ const parts = {
 };
 const regex = RegExp(`${parts.before}${parts.main}`, 'gu');
 const isLatinMention = /@[\w\d\-_.@]+$/;
+const hasAnchors = /<a.*>.*<\/a>/i;
 
 const Mentions = module.exports;
 
@@ -356,31 +357,35 @@ async function getMatches(content, isMarkdown = false) {
 		}
 	});
 
-	const $ = cheerio.load(splitContent.join(''));
-	const anchors = $('a');
-	const urls = new Set();
-	Array.from(anchors).forEach((anchor) => {
-		const text = $(anchor).prop('innerText');
-		const match = text.match(regex);
-		if (match) {
-			urls.add($(anchor).attr('href'));
-		}
-	});
-
-	// Filter out urls that don't backreference to a remote id
-	const backrefs = await db.getObjectFields('remoteUrl:uid', Array.from(urls));
-	const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', Array.from(urls));
+	const joined = splitContent.join('');
+	const parseAnchors = joined.match(hasAnchors);
 	const urlMap = new Map();
-	Array.from(urls).map(async (url, index) => {
-		if (backrefs[url] || urlAsIdExists[index]) {
-			urlMap.set(url, backrefs[url] || url);
-		}
-	});
-	let slugs = await User.getUsersFields(Array.from(urlMap.values()), ['userslug']);
-	slugs = slugs.map(({ userslug }) => userslug);
-	Array.from(urlMap.keys()).forEach((url, idx) => {
-		urlMap.set(url, `/user/${encodeURIComponent(slugs[idx])}`);
-	});
+	if (!isMarkdown && parseAnchors) {
+		const $ = cheerio.load(splitContent.join(''));
+		const anchors = $('a');
+		const urls = new Set();
+		Array.from(anchors).forEach((anchor) => {
+			const text = $(anchor).prop('innerText');
+			const match = text.match(regex);
+			if (match) {
+				urls.add($(anchor).attr('href'));
+			}
+		});
+
+		// Filter out urls that don't backreference to a remote id
+		const backrefs = await db.getObjectFields('remoteUrl:uid', Array.from(urls));
+		const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', Array.from(urls));
+		Array.from(urls).map(async (url, index) => {
+			if (backrefs[url] || urlAsIdExists[index]) {
+				urlMap.set(url, backrefs[url] || url);
+			}
+		});
+		let slugs = await User.getUsersFields(Array.from(urlMap.values()), ['userslug']);
+		slugs = slugs.map(({ userslug }) => userslug);
+		Array.from(urlMap.keys()).forEach((url, idx) => {
+			urlMap.set(url, `/user/${encodeURIComponent(slugs[idx])}`);
+		});
+	}
 
 	return { splitContent, matches, urlMap };
 }
