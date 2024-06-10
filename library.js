@@ -394,7 +394,7 @@ Mentions.getMatches = async (content) => {
 	// Exported method only accepts markdown, also filters out dupes and matches to ensure slugs exist
 	let { matches } = await getMatches(content, true);
 	matches = await filterMatches(matches);
-	const ids = await Promise.all(matches.map(async m => User.getUidByUserslug(m.slice(1).toLowerCase())));
+	const ids = await User.getUidsByUserslugs(matches.map(match => match.slice(1).toLowerCase()));
 	matches = matches.map((slug, idx) => (ids[idx] ? {
 		id: ids[idx],
 		slug,
@@ -405,7 +405,7 @@ Mentions.getMatches = async (content) => {
 
 async function filterMatches(matches) {
 	matches = Array.from(new Set(matches));
-	const exists = await Promise.all(matches.map(match => meta.userOrGroupExists(match.slice(1))));
+	const exists = await meta.userOrGroupExists(matches.map(match => match.slice(1)));
 
 	return matches.filter((m, i) => exists[[i]]);
 }
