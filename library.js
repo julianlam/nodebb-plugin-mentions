@@ -113,7 +113,7 @@ Mentions.notify = async function ({ post }) {
 
 		if (Array.isArray(tag) && tag.length) {
 			const slugs = tag.reduce((slugs, tag) => {
-				if (tag.type === 'Mention') {
+				if (tag.type === 'Mention' && tag.name && typeof tag.name === 'string') {
 					const [slug, hostname] = tag.name.slice(1).split('@');
 					if (hostname === nconf.get('url_parsed').hostname) {
 						slugs.push(slug);
