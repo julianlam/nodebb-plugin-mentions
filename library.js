@@ -373,9 +373,10 @@ async function getMatches(content, isMarkdown = false) {
 		});
 
 		// Filter out urls that don't backreference to a remote id
-		const backrefs = urls.size ? await db.getObjectFields('remoteUrl:uid', Array.from(urls)) : {};
-		const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', Array.from(urls));
-		Array.from(urls).map(async (url, index) => {
+		const urlsArray = Array.from(urls);
+		const backrefs = urls.size ? await db.getObjectFields('remoteUrl:uid', urlsArray) : {};
+		const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', urlsArray);
+		urlsArray.forEach((url, index) => {
 			if (backrefs[url] || urlAsIdExists[index]) {
 				urlMap.set(url, backrefs[url] || url);
 			}
