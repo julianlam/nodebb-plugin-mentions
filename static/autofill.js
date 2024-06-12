@@ -43,7 +43,7 @@ $(document).ready(function () {
 						const localMatches = localUserList.filter(
 							u => u.username.toLocaleLowerCase().startsWith(termLowerCase)
 						);
-						const categoryMatches = categoryList.filter(c => c.handle.startsWith(termLowerCase));
+						const categoryMatches = categoryList.filter(c => c && c.handle && c.handle.startsWith(termLowerCase));
 
 						// remove local matches from search results, add category matches
 						users = users.filter(u => !localMatches.find(lu => lu.uid === u.uid));

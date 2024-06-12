@@ -416,7 +416,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 	}
 
 	// Note: Mentions.clean explicitly can't be called here because I need the content unstripped
-	let { splitContent, matches, urlMap } = await getMatches(content);
+	let { splitContent, matches, urlMap } = await getMatches(content, true);
 
 	if (!matches.length && !urlMap.size) {
 		return content;
