@@ -36,7 +36,6 @@ const parts = {
 };
 const regex = RegExp(`${parts.before}${parts.main}`, 'gu');
 const isLatinMention = /@[\w\d\-_.@]+$/;
-const anchorRegex = /<a.*?href=['"](.+?)['"].*?>(.*?)<\/a>/ig;
 
 const Mentions = module.exports;
 
@@ -356,39 +355,7 @@ async function getMatches(content, isMarkdown = false) {
 		}
 	});
 
-	// Early return
-	if (isMarkdown) {
-		return { splitContent, matches, urlMap: new Map() };
-	}
-
-	// Find matches via backreferenced href
-	const joined = splitContent.join('');
-	const anchors = new Set(joined.matchAll(anchorRegex));
-	const urlMap = new Map();
-	const urls = new Set();
-	if (!isMarkdown && anchors.size) {
-		anchors.forEach((match) => {
-			const [, url] = match;
-			urls.add(url);
-		});
-
-		// Filter out urls that don't backreference to a remote id
-		const urlsArray = Array.from(urls);
-		const backrefs = urls.size ? await db.getObjectFields('remoteUrl:uid', urlsArray) : {};
-		const urlAsIdExists = await db.isSortedSetMembers('usersRemote:lastCrawled', urlsArray);
-		urlsArray.forEach((url, index) => {
-			if (backrefs[url] || urlAsIdExists[index]) {
-				urlMap.set(url, backrefs[url] || url);
-			}
-		});
-		let slugs = await User.getUsersFields(Array.from(urlMap.values()), ['userslug']);
-		slugs = slugs.map(({ userslug }) => userslug);
-		Array.from(urlMap.keys()).forEach((url, idx) => {
-			urlMap.set(url, `/user/${encodeURIComponent(slugs[idx])}`);
-		});
-	}
-
-	return { splitContent, matches, urlMap };
+	return { splitContent, matches };
 }
 
 Mentions.getMatches = async (content) => {
@@ -417,9 +384,9 @@ Mentions.parseRaw = async (content, type = 'default') => {
 	}
 
 	// Note: Mentions.clean explicitly can't be called here because I need the content unstripped
-	let { splitContent, matches, urlMap } = await getMatches(content, true);
+	let { splitContent, matches } = await getMatches(content);
 
-	if (!matches.length && !urlMap.size) {
+	if (!matches.length) {
 		return content;
 	}
 
@@ -437,19 +404,23 @@ Mentions.parseRaw = async (content, type = 'default') => {
 	await Promise.all(matches.map(async (match) => {
 		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
+		let cid = 0;
+		let groupExists = 0;
 		const uid = await User.getUidByUserslug(slug);
-		const cid = await categories.getCidByHandle(slug);
-		const { groupExists, user, category } = await utils.promiseParallel({
-			groupExists: Groups.existsBySlug(slug),
-			user: User.getUserFields(uid, ['uid', 'username', 'userslug', 'fullname', 'url']),
-			category: categories.getCategoryFields(cid, ['slug']),
-		});
+		if (!uid) {
+			({ groupExists, cid } = await utils.promiseParallel({
+				groupExists: Groups.existsBySlug(slug),
+				cid: categories.getCidByHandle(slug),
+			}));
+		}
 
 		if (uid || groupExists || cid) {
 			let url;
-
+			let user;
+			let mentionType = 'user';
 			switch (true) {
 				case !!uid: {
+					user = await User.getUserFields(uid, ['uid', 'username', 'userslug', 'fullname', 'url']);
 					url = `/user/${encodeURIComponent(user.userslug)}`;
 					if (type.startsWith('activitypub') && !utils.isNumber(uid)) {
 						url = user.url || user.uid;
@@ -458,11 +429,14 @@ Mentions.parseRaw = async (content, type = 'default') => {
 				}
 
 				case !!cid: {
+					mentionType = 'category';
+					const category = await categories.getCategoryFields(cid, ['slug']);
 					url = `/category/${category.slug}`;
 					break;
 				}
 
 				case !!groupExists: {
+					mentionType = 'group';
 					url = `/groups/${slug}`;
 					break;
 				}
@@ -484,7 +458,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 					const atIndex = match.indexOf('@');
 					const plain = match.slice(0, atIndex);
 					match = match.slice(atIndex);
-					if (user.uid) {
+					if (user && user.uid) {
 						switch (Mentions._settings.display) {
 							case 'fullname':
 								match = user.fullname || match;
@@ -495,7 +469,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 						}
 					}
 
-					const str = `<a class="plugin-mentions-${user.uid ? 'user' : 'group'} plugin-mentions-a" href="${url}">${match}</a>`;
+					const str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${url}">${match}</a>`;
 
 					return plain + str;
 				});
@@ -503,25 +477,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 		}
 	}));
 
-	let parsed = splitContent.join('');
-
-	// Early return if no urls to modify
-	if (!urlMap.size) {
-		return parsed;
-	}
-
-	// Modify existing anchors to local profile
-	const anchors = new Set(Array.from(parsed.matchAll(anchorRegex)).reverse());
-	if (!anchors.size) {
-		return parsed;
-	}
-
-	anchors.forEach(([match, href]) => {
-		const replacement = match.replace(href, urlMap.get(href));
-		parsed = parsed.split(match).join(replacement);
-	});
-
-	return parsed;
+	return splitContent.join('');
 };
 
 Mentions.clean = function (input, isMarkdown, stripBlockquote, stripCode) {
