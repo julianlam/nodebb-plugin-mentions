@@ -362,11 +362,29 @@ Mentions.getMatches = async (content) => {
 	// Exported method only accepts markdown, also filters out dupes and matches to ensure slugs exist
 	let { matches } = await getMatches(content, true);
 	matches = await filterMatches(matches);
-	const ids = await User.getUidsByUserslugs(matches.map(match => match.slice(1).toLowerCase()));
-	matches = matches.map((slug, idx) => (ids[idx] ? {
-		id: ids[idx],
-		slug,
-	} : null)).filter(Boolean);
+	const normalized = matches.map(match => match.slice(1).toLowerCase());
+	const [uids, cids] = await Promise.all([
+		User.getUidsByUserslugs(normalized),
+		db.sortedSetScores('categoryhandle:cid', normalized),
+	]);
+
+	matches = matches.map((slug, idx) => {
+		if (uids[idx]) {
+			return {
+				type: 'uid',
+				id: uids[idx],
+				slug,
+			};
+		} else if (cids[idx]) {
+			return {
+				type: 'cid',
+				id: cids[idx],
+				slug,
+			};
+		}
+
+		return false;
+	}).filter(Boolean);
 
 	return new Set(matches);
 };
