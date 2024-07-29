@@ -37,6 +37,14 @@ $(document).ready(function () {
 						composerObj: composer.posts[uuid],
 					}, function (err, users) {
 						if (err) {
+							require(['alerts'], function (alerts) {
+								alerts.alert({
+									id: 'mention-error',
+									type: 'danger',
+									message: err.message,
+									timeout: 5000,
+								});
+							});
 							return callback([]);
 						}
 						const termLowerCase = term.toLocaleLowerCase();
