@@ -127,7 +127,7 @@ Mentions.notify = async function ({ post }) {
 		}
 	}
 
-	if (!uidsToNotify.length && !groupsToNotify.length) {
+	if ((!uidsToNotify && !groupsToNotify) || (!uidsToNotify.length && !groupsToNotify.length)) {
 		return;
 	}
 
