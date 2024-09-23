@@ -131,7 +131,7 @@ Mentions.notify = async function ({ post }) {
 		return;
 	}
 
-	const [topic, userData, topicFollowers] = await Promise.all([
+	let [topic, userData, topicFollowers] = await Promise.all([
 		Topics.getTopicFields(post.tid, ['title', 'cid']),
 		User.getUserFields(post.uid, ['username']),
 		Mentions._settings.disableFollowedTopics === 'on' ? Topics.getFollowers(post.tid) : [],
@@ -139,6 +139,7 @@ Mentions.notify = async function ({ post }) {
 	const { displayname } = userData;
 	const title = entitiesDecode(topic.title);
 	const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
+	topicFollowers = topicFollowers.map(uid => parseInt(uid, 10));
 
 	let uids = uidsToNotify.filter(
 		uid => parseInt(uid, 10) !== postOwner && !topicFollowers.includes(uid)
