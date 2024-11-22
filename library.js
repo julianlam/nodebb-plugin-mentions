@@ -142,7 +142,7 @@ Mentions.notify = async function ({ post }) {
 	topicFollowers = topicFollowers.map(uid => parseInt(uid, 10));
 
 	let uids = uidsToNotify.filter(
-		uid => parseInt(uid, 10) !== postOwner && !topicFollowers.includes(uid)
+		uid => parseInt(uid, 10) !== postOwner && !topicFollowers.includes(parseInt(uid, 10))
 	);
 
 	if (Mentions._settings.privilegedDirectReplies === 'on') {
