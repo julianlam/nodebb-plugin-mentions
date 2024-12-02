@@ -424,7 +424,7 @@ Mentions.parseRaw = async (content) => {
 					if (user.uid) {
 						switch (Mentions._settings.display) {
 							case 'fullname':
-								match = user.fullname || match;
+								match = user.displayname || match;
 								break;
 							case 'username':
 								match = user.username;
