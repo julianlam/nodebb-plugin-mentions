@@ -81,7 +81,7 @@ function getNoMentionGroups() {
 }
 
 Mentions.notify = async function ({ post }) {
-	const postOwner = parseInt(post.uid, 10);
+	const postOwner = String(post.uid);
 
 	let uidsToNotify;
 	let groupsToNotify;
@@ -109,9 +109,9 @@ Mentions.notify = async function ({ post }) {
 	} else if (post._activitypub) { // ActivityPub
 		const { tag } = post._activitypub;
 		groupsToNotify = []; // cannot mention groups for now
-
+		let slugs = [];
 		if (Array.isArray(tag) && tag.length) {
-			const slugs = tag.reduce((slugs, tag) => {
+			slugs = tag.reduce((slugs, tag) => {
 				if (tag.type === 'Mention' && tag.name && typeof tag.name === 'string') {
 					const [slug, hostname] = tag.name.slice(1).split('@');
 					if (hostname === nconf.get('url_parsed').hostname) {
@@ -120,18 +120,16 @@ Mentions.notify = async function ({ post }) {
 				}
 				return slugs;
 			}, []);
-
-			uidsToNotify = slugs.length ? await db.sortedSetScores('userslug:uid', slugs) : [];
-		} else {
-			uidsToNotify = [];
 		}
+		uidsToNotify = slugs.length ? await db.sortedSetScores('userslug:uid', slugs) : [];
+		uidsToNotify = uidsToNotify.map(String);
 	}
 
 	if ((!uidsToNotify && !groupsToNotify) || (!uidsToNotify.length && !groupsToNotify.length)) {
 		return;
 	}
 
-	let [topic, userData, topicFollowers] = await Promise.all([
+	const [topic, userData, topicFollowers] = await Promise.all([
 		Topics.getTopicFields(post.tid, ['title', 'cid']),
 		User.getUserFields(post.uid, ['username']),
 		Mentions._settings.disableFollowedTopics === 'on' ? Topics.getFollowers(post.tid) : [],
@@ -139,10 +137,9 @@ Mentions.notify = async function ({ post }) {
 	const { displayname } = userData;
 	const title = entitiesDecode(topic.title);
 	const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
-	topicFollowers = topicFollowers.map(uid => parseInt(uid, 10));
 
 	let uids = uidsToNotify.filter(
-		uid => parseInt(uid, 10) !== postOwner && !topicFollowers.includes(parseInt(uid, 10))
+		uid => uid !== postOwner && !topicFollowers.includes(uid)
 	);
 
 	if (Mentions._settings.privilegedDirectReplies === 'on') {
@@ -158,7 +155,7 @@ Mentions.notify = async function ({ post }) {
 			}
 			groupMemberUids[uid] = 1;
 			return !uids.includes(uid) &&
-				parseInt(uid, 10) !== postOwner &&
+				uid !== postOwner &&
 				!topicFollowers.includes(uid);
 		});
 	});
