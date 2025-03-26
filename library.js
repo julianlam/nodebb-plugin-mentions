@@ -489,7 +489,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 					if (type === 'markdown') {
 						str = `[${match}](${nconf.get('url')}${url})`;
 					} else {
-						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${url}">${match}</a>`;
+						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${url}">@<bdi>${match.slice(1)}</bdi></a>`;
 					}
 
 					return plain + str;
