@@ -74,7 +74,7 @@ $(document).ready(function () {
 			index: 1,
 			replace: function (mention) {
 				// Strip (fullname) part from mentions
-				mention = mention.replace(/ \(.+\)/, '');
+				mention = mention.replace(/ \(.+\)$/, '');
 				mention = $('<div/>').html(mention);
 				// Strip letter avatar
 				mention.find('span').remove();
