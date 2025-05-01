@@ -7,6 +7,9 @@
     "type": "git",
     "url": "https://github.com/julianlam/nodebb-plugin-mentions"
   },
+  "scripts": {
+    "lint": "eslint ."
+  },
   "keywords": [
     "nodebb",
     "plugin",
@@ -27,9 +30,9 @@
     "validator": "^13.0.0"
   },
   "devDependencies": {
-    "eslint": "^9.0.0",
-    "eslint-config-nodebb": "1.1.4",
-    "eslint-plugin-import": "2.31.0",
+    "eslint": "^9.25.1",
+    "eslint-config-nodebb": "^1.1.4",
+    "eslint-plugin-import": "^2.31.0",
     "mocha": "11.1.0"
   }
 }
