@@ -473,7 +473,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 					// Again, cleaning up lookaround leftover bits
 					const atIndex = match.indexOf('@');
 					const plain = match.slice(0, atIndex);
-					match = match.slice(atIndex);
+					match = match.slice(atIndex + 1);
 					if (user && user.uid) {
 						switch (Mentions._settings.display) {
 							case 'fullname':
@@ -489,7 +489,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 					if (type === 'markdown') {
 						str = `[${match}](${nconf.get('url')}${url})`;
 					} else {
-						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${url}">@<bdi>${match.slice(1)}</bdi></a>`;
+						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${url}">${!Mentions._settings.display ? '@' : ''}<bdi>${match}</bdi></a>`;
 					}
 
 					return plain + str;
