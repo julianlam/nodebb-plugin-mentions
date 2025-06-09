@@ -1,6 +1,7 @@
 {
 	"mentions": "提到",
-	"user-mentioned-you-in": "<strong>%1</strong> 在 <strong>%2</strong> 中提到了你",
+	"user-mentioned-you-in": "<strong>%1</strong> 在 <strong>%2</strong> 中提到了您",
+	"user-mentioned-you-in-room": "<strong>%1</strong> 在 <strong class=\"text-nowrap\"><i class=\"fa %2\"></i>%3</strong> 中提到了您",
 	"user-mentioned-group-in": "<strong>%1</strong> 在 <strong>%3</strong> 中提到了 <strong>%2</strong>",
-	"notificationType_mention": "当有人提到你时"
+	"notificationType_mention": "当有人提到您时"
 }
