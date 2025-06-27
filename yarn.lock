@@ -589,9 +589,9 @@ escape-string-regexp@^4.0.0:
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz"
   integrity sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==
 
-eslint-config-nodebb@^1.1.8:
+eslint-config-nodebb@^1.1.4:
   version "1.1.8"
-  resolved "https://registry.yarnpkg.com/eslint-config-nodebb/-/eslint-config-nodebb-1.1.8.tgz#c521829aa1a50566d1d3dd132d009b147d404d7a"
+  resolved "https://registry.npmjs.org/eslint-config-nodebb/-/eslint-config-nodebb-1.1.8.tgz"
   integrity sha512-cj/N9EXWL1tA1kUBlb19wkXjbTIjEWkqapxwz4hVUIQuB6olH5/MuI7+N67gqpWKp8/apjhEiqsLjC9BkjGWPQ==
 
 eslint-import-resolver-node@^0.3.9:
@@ -935,10 +935,10 @@ he@^1.2.0:
   resolved "https://registry.npmjs.org/he/-/he-1.2.0.tgz"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-html-entities@^2.3.2:
-  version "2.3.2"
-  resolved "https://registry.npmjs.org/html-entities/-/html-entities-2.3.2.tgz"
-  integrity sha512-c3Ab/url5ksaT0WyleslpBEthOzWhrjQbg75y7XUsfSzi3Dgzt0l8w5e7DylRn15MTlMMD58dTfzddNS2kcAjQ==
+html-entities@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/html-entities/-/html-entities-2.6.0.tgz#7c64f1ea3b36818ccae3d3fb48b6974208e984f8"
+  integrity sha512-kig+rMn/QOVRvr7c86gQ8lWXq+Hkv6CbAH1hLu+RG338StTpE8Z0b44SDVaqVu7HGKf27frdmUYEs9hTUX/cLQ==
 
 ignore@^5.2.0:
   version "5.3.2"
