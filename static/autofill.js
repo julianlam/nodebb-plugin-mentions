@@ -64,6 +64,7 @@ $(document).ready(function () {
 						}).sort(function (a, b) {
 							return a.toLocaleLowerCase() > b.toLocaleLowerCase() ? 1 : -1;
 						});
+
 						// Add group mentions at the bottom of dropdown
 						mentions = mentions.concat(groupMentions);
 
@@ -113,10 +114,24 @@ $(document).ready(function () {
 				return carry;
 			}
 
-			// Format suggestions as 'avatar username/name (fullname)'
-			const avatar = entry.uid ? helpers.buildAvatar(entry, '24px', true) : '';
-			const fullname = entry.fullname ? `(${entry.fullname})` : '';
-			carry.push(`${avatar} ${entry.username || entry.name} ${helpers.escape(fullname)}`);
+			// Format suggestions as 'avatar username/name (fullname/slug)'
+			switch(true) {
+				case entry.hasOwnProperty('uid'): {
+					const avatar = helpers.buildAvatar(entry, '24px', true);
+					const fullname = entry.fullname ? `(${entry.fullname})` : '';
+					carry.push(`${avatar} ${entry.username || entry.name} ${helpers.escape(fullname)}`);
+					break;
+				}
+
+				case entry.hasOwnProperty('cid'): {
+					const avatar = helpers.buildCategoryIcon(entry, '24px', 'rounded-circle');
+					carry.push(`${avatar} ${entry.name}${!utils.isNumber(entry.cid) ? ` (${entry.slug})` : ''}`);
+					break;
+				}
+
+				default:
+					carry.push(entry.name);
+			}
 
 			return carry;
 		}, []);
