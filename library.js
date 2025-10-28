@@ -593,17 +593,21 @@ SocketPlugins.mentions.userSearch = async (socket, data) => {
 		).concat(fullnameUsers);
 	}
 
-	if (Mentions._settings.privilegedDirectReplies !== 'on') {
+	if (Mentions._settings.privilegedDirectReplies === 'on') {
+		if (data.composerObj) {
+			const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
+			const filteredUids = await filterPrivilegedUids(users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
+
+			users = users.filter(userObj => filteredUids.includes(userObj.uid));
+		}
+
 		return users;
 	}
 
-	if (data.composerObj) {
-		const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
-		const filteredUids = await filterPrivilegedUids(users.map(userObj => userObj.uid), cid, data.composerObj.toPid);
+	// Remote categories
+	let { categories: categoriesObj } = await categories.search(data);
+	categoriesObj = categoriesObj.filter(category => !utils.isNumber(category.cid));
 
-		users = users.filter(userObj => filteredUids.includes(userObj.uid));
-	}
-
-	return users;
+	return [...users, ...categoriesObj];
 };
 
