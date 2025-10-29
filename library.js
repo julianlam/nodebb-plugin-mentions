@@ -360,11 +360,17 @@ Mentions.getMatches = async (content) => {
 	// Exported method only accepts markdown, also filters out dupes and matches to ensure slugs exist
 	let { matches } = await getMatches(content, true);
 	matches = await filterMatches(matches);
+	if (!matches.length) {
+		return new Set();
+	}
+
 	const normalized = matches.map(match => match.slice(1).toLowerCase());
-	const [uids, cids] = await Promise.all([
+	let [uids, localCids, remoteCids] = await Promise.all([
 		User.getUidsByUserslugs(normalized),
 		db.sortedSetScores('categoryhandle:cid', normalized),
+		db.getObjectFields('handle:cid', normalized),
 	]);
+	remoteCids = Object.values(remoteCids);
 
 	matches = matches.map((slug, idx) => {
 		if (uids[idx]) {
@@ -373,10 +379,10 @@ Mentions.getMatches = async (content) => {
 				id: uids[idx],
 				slug,
 			};
-		} else if (cids[idx]) {
+		} else if (localCids[idx] || remoteCids[idx]) {
 			return {
 				type: 'cid',
-				id: cids[idx],
+				id: localCids[idx] || remoteCids[idx],
 				slug,
 			};
 		}
@@ -389,9 +395,11 @@ Mentions.getMatches = async (content) => {
 
 async function filterMatches(matches) {
 	matches = Array.from(new Set(matches));
-	const exists = await meta.userOrGroupExists(matches.map(match => match.slice(1)));
+	const slugs = matches.map(match => match.slice(1));
+	const exists = await meta.slugTaken(slugs);
+	const remoteCidExists = await db.isObjectFields('handle:cid', slugs);
 
-	return matches.filter((m, i) => exists[[i]]);
+	return matches.filter((m, i) => exists[i] || remoteCidExists[i]);
 }
 
 Mentions.parseRaw = async (content, type = 'default') => {
