@@ -6,6 +6,7 @@ $(document).ready(function () {
 	let categoryList;
 	const categorySlugMap = new Map();
 	let localUserList = [];
+	let helpers;
 
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
 		loadTopicUsers(data.element);
@@ -22,11 +23,11 @@ $(document).ready(function () {
 		const strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
-				require(['composer', 'helpers', 'slugify'], function (composer, helpers, _slugify) {
+				require(['composer', 'helpers', 'slugify'], function (composer, _helpers, _slugify) {
 					slugify = _slugify;
-					let mentions = [];
+					helpers = _helpers;
 					if (!term) {
-						mentions = entriesToMentions(sortEntries(localUserList), helpers);
+						const mentions = entriesToMentions(sortEntries(localUserList), helpers);
 						return callback(mentions);
 					}
 
@@ -56,7 +57,7 @@ $(document).ready(function () {
 						// remove local matches from search results, add category matches
 						users = users.filter(u => !localMatches.find(lu => lu.uid === u.uid));
 						users = sortEntries(localMatches).concat(sortEntries([...users, ...categoryMatches]));
-						mentions = entriesToMentions(users, helpers);
+						// mentions = entriesToMentions(users, helpers);
 
 						// Add groups that start with the search term
 						const groupMentions = groupList.filter(function (groupName) {
@@ -66,27 +67,20 @@ $(document).ready(function () {
 						});
 
 						// Add group mentions at the bottom of dropdown
-						mentions = mentions.concat(groupMentions);
+						// mentions = mentions.concat(groupMentions);
 
-						callback(mentions);
+						callback([...users, ...groupMentions]);
 					});
 				});
 			},
 			index: 1,
+			template: entryToMention,
 			replace: function (mention) {
-				// Strip (fullname) part from mentions
-				mention = mention.replace(/ \(.+\)$/, '');
-				mention = $('<div/>').html(mention);
-				// Strip letter avatar
-				mention.find('span').remove();
-
-				const text = mention.text().trim();
-				const categoryHandle = categorySlugMap.get(text.toLowerCase());
-				if (categoryHandle) {
-					return `@${categoryHandle}`;
+				if (mention.uid) {
+					return `@${mention.userslug}`;
+				} else if (mention.cid) {
+					return `@${utils.isNumber(mention.cid) ? mention.handle : mention.slug}`;
 				}
-
-				return '@' + slugify(text, true) + ' ';
 			},
 			cache: true,
 		};
@@ -107,6 +101,25 @@ $(document).ready(function () {
 		});
 	}
 
+	function entryToMention(entry) {
+		// Format suggestions as 'avatar username/name (fullname/slug)'
+		switch(true) {
+			case entry.hasOwnProperty('uid'): {
+				const avatar = helpers.buildAvatar(entry, '24px', true);
+				const fullname = entry.fullname ? `(${entry.fullname})` : '';
+				return `${avatar} ${entry.username || entry.name} ${helpers.escape(fullname)}`;
+			}
+
+			case entry.hasOwnProperty('cid'): {
+				const avatar = helpers.buildCategoryIcon(entry, '24px', 'rounded-circle');
+				return `${avatar} ${entry.name}${!utils.isNumber(entry.cid) ? ` (${entry.slug})` : ''}`;
+			}
+
+			default:
+				return entry.name;
+		}
+	}
+
 	function entriesToMentions(entries, helpers) {
 		return entries.reduce(function (carry, entry) {
 			// Don't add current user to suggestions
@@ -114,25 +127,7 @@ $(document).ready(function () {
 				return carry;
 			}
 
-			// Format suggestions as 'avatar username/name (fullname/slug)'
-			switch(true) {
-				case entry.hasOwnProperty('uid'): {
-					const avatar = helpers.buildAvatar(entry, '24px', true);
-					const fullname = entry.fullname ? `(${entry.fullname})` : '';
-					carry.push(`${avatar} ${entry.username || entry.name} ${helpers.escape(fullname)}`);
-					break;
-				}
-
-				case entry.hasOwnProperty('cid'): {
-					const avatar = helpers.buildCategoryIcon(entry, '24px', 'rounded-circle');
-					carry.push(`${avatar} ${entry.name}${!utils.isNumber(entry.cid) ? ` (${entry.slug})` : ''}`);
-					break;
-				}
-
-				default:
-					carry.push(entry.name);
-			}
-
+			carry.push(entryToMention(entry));
 			return carry;
 		}, []);
 	}
