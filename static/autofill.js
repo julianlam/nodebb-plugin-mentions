@@ -19,15 +19,13 @@ $(document).ready(function () {
 			loadCategoryList();
 		}
 
-		let slugify;
 		const strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
-				require(['composer', 'helpers', 'slugify'], function (composer, _helpers, _slugify) {
-					slugify = _slugify;
+				require(['composer', 'helpers'], function (composer, _helpers) {
 					helpers = _helpers;
 					if (!term) {
-						const mentions = entriesToMentions(sortEntries(localUserList), helpers);
+						const mentions = entriesToMentions(sortEntries(localUserList));
 						return callback(mentions);
 					}
 
@@ -120,7 +118,7 @@ $(document).ready(function () {
 		}
 	}
 
-	function entriesToMentions(entries, helpers) {
+	function entriesToMentions(entries) {
 		return entries.reduce(function (carry, entry) {
 			// Don't add current user to suggestions
 			if (app.user.username && app.user.username === entry.username) {
