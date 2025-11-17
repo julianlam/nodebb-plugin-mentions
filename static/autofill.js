@@ -25,8 +25,7 @@ $(document).ready(function () {
 				require(['composer', 'helpers'], function (composer, _helpers) {
 					helpers = _helpers;
 					if (!term) {
-						const mentions = entriesToMentions(sortEntries(localUserList));
-						return callback(mentions);
+						return callback(localUserList.filter((user) => user.uid !== app.user.uid));
 					}
 
 					// Get composer metadata
@@ -116,18 +115,6 @@ $(document).ready(function () {
 			default:
 				return entry.name;
 		}
-	}
-
-	function entriesToMentions(entries) {
-		return entries.reduce(function (carry, entry) {
-			// Don't add current user to suggestions
-			if (app.user.username && app.user.username === entry.username) {
-				return carry;
-			}
-
-			carry.push(entryToMention(entry));
-			return carry;
-		}, []);
 	}
 
 	function loadTopicUsers(element) {
