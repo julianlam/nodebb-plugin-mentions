@@ -75,9 +75,9 @@ $(document).ready(function () {
 			template: entryToMention,
 			replace: function (mention) {
 				if (mention.uid) {
-					return `@${mention.userslug}`;
+					return `@${mention.userslug} `;
 				} else if (mention.cid) {
-					return `@${utils.isNumber(mention.cid) ? mention.handle : mention.slug}`;
+					return `@${utils.isNumber(mention.cid) ? mention.handle : mention.slug} `;
 				}
 			},
 			cache: true,
