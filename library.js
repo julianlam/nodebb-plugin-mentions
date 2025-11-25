@@ -495,7 +495,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 
 					let str;
 					if (type === 'markdown') {
-						str = `[${match}](${nconf.get('url')}${url})`;
+						str = `[${!Mentions._settings.display ? '@' : ''}${match}](${nconf.get('url')}${url})`;
 					} else {
 						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${nconf.get('relative_path')}${url}" aria-label="Profile: ${match}">${!Mentions._settings.display ? '@' : ''}<bdi>${match}</bdi></a>`;
 					}
