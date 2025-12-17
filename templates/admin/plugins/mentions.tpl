@@ -45,7 +45,7 @@
 						<div class="mb-3 form-check">
 							<input type="checkbox" class="form-check-input" id="disableFollowedTopics" name="disableFollowedTopics" />
 							<label for="disableFollowedTopics" class="form-check-label">
-								<span>Do not notify mentioned users in topics topics they already follow</span>
+								<span>Do not notify mentioned users in topics they already follow</span>
 							</label>
 							<p class="form-text">This avoids the &quot;double notification&quot; for recipients.</p>
 						</div>
