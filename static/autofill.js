@@ -77,6 +77,8 @@ $(document).ready(function () {
 					return `@${mention.userslug} `;
 				} else if (mention.cid) {
 					return `@${utils.isNumber(mention.cid) ? mention.handle : mention.slug} `;
+				} else if (mention) {
+					return `@${mention} `;
 				}
 			},
 			cache: true,
@@ -113,7 +115,7 @@ $(document).ready(function () {
 			}
 
 			default:
-				return entry.name;
+				return entry.hasOwnProperty('name') ? entry.name : entry;
 		}
 	}
 
