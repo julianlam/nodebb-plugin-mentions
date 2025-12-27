@@ -18,12 +18,13 @@ $(document).ready(function () {
 		if (!categoryList) {
 			loadCategoryList();
 		}
-
+		let slugify;
 		const strategy = {
 			match: /\B@([^\s\n]*)?$/,
 			search: function (term, callback) {
-				require(['composer', 'helpers'], function (composer, _helpers) {
+				require(['composer', 'helpers', 'slugify'], function (composer, _helpers, _slugify) {
 					helpers = _helpers;
+					slugify = _slugify;
 					if (!term) {
 						return callback(localUserList.filter((user) => user.uid !== app.user.uid));
 					}
@@ -78,7 +79,7 @@ $(document).ready(function () {
 				} else if (mention.cid) {
 					return `@${utils.isNumber(mention.cid) ? mention.handle : mention.slug} `;
 				} else if (mention) {
-					return `@${mention} `;
+					return `@${slugify(mention, true)} `;
 				}
 			},
 			cache: true,
