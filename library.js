@@ -394,6 +394,10 @@ Mentions.getMatches = async (content) => {
 };
 
 async function filterMatches(matches) {
+	if (!matches.length) {
+		return [];
+	}
+
 	matches = Array.from(new Set(matches));
 	const slugs = matches.map(match => match.slice(1));
 	const exists = await meta.slugTaken(slugs);
