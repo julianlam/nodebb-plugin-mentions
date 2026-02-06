@@ -1,7 +1,7 @@
 {
 	"mentions": "Mentions",
-	"user-mentioned-you-in": "<strong>%1</strong> mentioned you in <br/><strong>%2</strong>",
+	"user-mentioned-you-in": "<strong>%1</strong> mentioned you in <strong>%2</strong>",
 	"user-mentioned-you-in-room": "<strong>%1</strong> mentioned you in <strong class=\"text-nowrap\"><i class=\"fa %2\"></i>%3</strong>",
-	"user-mentioned-group-in": "<strong>%1</strong> mentioned <strong>%2</strong> in <br/><strong>%3</strong>",
+	"user-mentioned-group-in": "<strong>%1</strong> mentioned <strong>%2</strong> in <strong>%3</strong>",
 	"notificationType-mention": "When someone mentions you"
 }
