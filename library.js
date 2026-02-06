@@ -198,11 +198,12 @@ Mentions.notifyMessage = async (hookData) => {
 	}
 	const io = require.main.require('./src/socket.io');
 
-	const [onlineUidsInRoom, fromUser, isUserInRoom, notifSettings, checks] = await Promise.all([
+	const [onlineUidsInRoom, fromUser, isUserInRoom, notifSettings, parsedMessage, checks] = await Promise.all([
 		io.getUidsInRoom(`chat_room_${roomId}`),
 		User.getUserFields(message.fromuid, ['username']),
 		Messaging.isUsersInRoom(matchedUids, roomId),
 		Messaging.getUidsNotificationSetting(matchedUids, roomId),
+		Messaging.parse(message.content, message.fromuid, 0, message.roomId, false),
 		Promise.all(matchedUids.map(
 			uid => !roomData.groups.length || Groups.isMemberOfAny(uid, roomData.groups)
 		)),
@@ -222,9 +223,9 @@ Mentions.notifyMessage = async (hookData) => {
 	const notifObj = await Notifications.create({
 		type: 'mention',
 		bodyShort: `[[notifications:user-mentioned-you-in-room, ${fromUser.displayname}, ${icon}, ${roomName}]]`,
-		bodyLong: message.content,
-		nid: `chat_${roomId}_${message.fromuid}_${message.messageId}`,
-		mid: message.messageId,
+		bodyLong: parsedMessage,
+		nid: `chat_${roomId}_${message.fromuid}_${message.mid}`,
+		mid: message.mid,
 		from: message.fromuid,
 		path: `/chats/${roomId}`,
 		importance: 6,
@@ -314,7 +315,10 @@ async function sendNotificationToUids(postData, uids, nidType, notificationText)
 }
 
 async function createNotification(postData, nidType, notificationText) {
-	const title = await Topics.getTopicField(postData.tid, 'title');
+	// postData.sourceContent or postData.content is not parsed yet
+	// this is triggered from action:post.save or action:post.edit
+	await posts.parsePost(postData);
+
 	return await Notifications.create({
 		type: 'mention',
 		bodyShort: notificationText,
@@ -324,7 +328,6 @@ async function createNotification(postData, nidType, notificationText) {
 		tid: postData.tid,
 		from: postData.uid,
 		path: `/post/${encodeURIComponent(postData.pid)}`,
-		topicTitle: title ? utils.decodeHTMLEntities(title) : title,
 		importance: 6,
 	});
 }
