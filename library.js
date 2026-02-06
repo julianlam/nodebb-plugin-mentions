@@ -26,6 +26,7 @@ const slugify = require.main.require('./src/slugify');
 const batch = require.main.require('./src/batch');
 const utils = require.main.require('./src/utils');
 const SocketPlugins = require.main.require('./src/socket.io/plugins');
+const translator = require.main.require('./src/translator');
 
 const utility = require('./lib/utility');
 
@@ -136,7 +137,6 @@ Mentions.notify = async function ({ post }) {
 	]);
 	const { displayname } = userData;
 	const title = entitiesDecode(topic.title);
-	const titleEscaped = title.replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 
 	let uids = uidsToNotify.filter(
 		uid => uid !== postOwner && !topicFollowers.includes(uid)
@@ -162,7 +162,8 @@ Mentions.notify = async function ({ post }) {
 
 	const filteredUids = await filterUidsAlreadyMentioned(uids, post.pid);
 	if (filteredUids.length) {
-		await sendNotificationToUids(post, filteredUids, 'user', `[[notifications:user-mentioned-you-in, ${displayname}, ${titleEscaped}]]`);
+		const notifText = translator.compile('notifications:user-mentioned-you-in', displayname, title);
+		await sendNotificationToUids(post, filteredUids, 'user', notifText);
 		await db.setAdd(`mentions:pid:${post.pid}:uids`, filteredUids);
 	}
 
@@ -172,7 +173,8 @@ Mentions.notify = async function ({ post }) {
 			const groupName = groupsToNotify[i].name;
 			const groupMentionSent = await db.isSetMember(`mentions:pid:${post.pid}:groups`, groupName);
 			if (!groupMentionSent && memberUids.length) {
-				await sendNotificationToUids(post, memberUids, groupName, `[[notifications:user-mentioned-group-in, ${displayname} , ${groupName}, ${titleEscaped}]]`);
+				const notifText = translator.compile('notifications:user-mentioned-group-in', displayname, groupName, title);
+				await sendNotificationToUids(post, memberUids, groupName, notifText);
 				await db.setAdd(`mentions:pid:${post.pid}:groups`, groupName);
 			}
 		}
