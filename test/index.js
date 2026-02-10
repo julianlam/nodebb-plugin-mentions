@@ -206,3 +206,15 @@ describe('parser', () => {
 		});
 	});
 });
+
+describe('.getMatches() edge cases', () => {
+	before(async function () {
+		this.slug = slugify(utils.generateUUID().slice(0, 8));
+		this.uid = await user.create({ username: this.slug });
+	});
+
+	it('should match a mention at the end of a sentence', async function () {
+		const matches = await main.getMatches(`test sentence @${this.slug}.`);
+		console.log(matches);
+	});
+});

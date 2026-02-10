@@ -32,7 +32,7 @@ const utility = require('./lib/utility');
 
 const parts = {
 	before: '(?<=(^|\\P{L}))', // a single unicode non-letter character or start of line
-	main: '(@[\\p{L}\\d\\-_.@]+)', // unicode letters, numbers, dashes, underscores, or periods
+	main: '(@[\\p{L}\\d\\-_.@]+(?<![.-]))', // unicode letters, numbers, dashes, underscores, or periods, negative lookbehind to guard against periods/dashes at end
 	after: '((?=\\b)(?=[^-])|(?=[^\\p{L}\\d\\-_.@])|$)', // used to figure out where latin mentions end
 };
 const regex = RegExp(`${parts.before}${parts.main}`, 'gu');
