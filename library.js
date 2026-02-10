@@ -434,6 +434,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 	});
 
 	// Convert matches to anchor html
+	let replacements = new Set();
 	await Promise.all(matches.map(async (match) => {
 		const slug = slugify(match.slice(1));
 		match = removePunctuationSuffix(match);
@@ -475,6 +476,15 @@ Mentions.parseRaw = async (content, type = 'default') => {
 				}
 			}
 
+			replacements.add({ match, url, user, mentionType });
+		}
+	}));
+
+	replacements = Array.from(replacements)
+		.sort((a, b) => {
+			return b.user.userslug.length - a.user.userslug.length;
+		})
+		.forEach(({ match, url, user, mentionType }) => {
 			const regex = isLatinMention.test(match) ?
 				RegExp(`${parts.before}${match}${parts.after}`, 'gu') :
 				RegExp(`${parts.before}${match}`, 'gu');
@@ -512,8 +522,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 					return plain + str;
 				});
 			});
-		}
-	}));
+		});
 
 	return splitContent.join('');
 };
