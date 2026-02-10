@@ -583,10 +583,12 @@ escape-string-regexp@^4.0.0:
   resolved "https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-4.0.0.tgz"
   integrity sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==
 
-eslint-config-nodebb@^1.1.4:
-  version "1.1.11"
-  resolved "https://registry.npmjs.org/eslint-config-nodebb/-/eslint-config-nodebb-1.1.11.tgz"
-  integrity sha512-UEAPQgOG0bof5gcnmw4KANVNdmkL63n4Xu3SvkVT0HgOfnlG0OfYtIaBiTXztvAktUr/pvV/BEpWGOJFfJvbKg==
+eslint-config-nodebb@^2.0.0:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/eslint-config-nodebb/-/eslint-config-nodebb-2.0.1.tgz#23b540210ec19e293f8d10d1cd59a2c1d22caea3"
+  integrity sha512-06QoLSEtjcUOstURvS4T2GyTFQOUdD/dCvJkrNi+CQ+9uJPpM41uZQAKJi94gv9OFTeLSdoqxESUXLbw2czqjw==
+  dependencies:
+    globals "17.3.0"
 
 eslint-import-resolver-node@^0.3.9:
   version "0.3.9"
@@ -859,6 +861,11 @@ glob@^10.4.5:
     minipass "^7.1.2"
     package-json-from-dist "^1.0.0"
     path-scurry "^1.11.1"
+
+globals@17.3.0:
+  version "17.3.0"
+  resolved "https://registry.yarnpkg.com/globals/-/globals-17.3.0.tgz#8b96544c2fa91afada02747cc9731c002a96f3b9"
+  integrity sha512-yMqGUQVVCkD4tqjOJf3TnrvaaHDMYp4VlUSObbkIiuCPe/ofdMBFIAcBbCSRFWOnos6qRiTVStDwqPLUclaxIw==
 
 globalthis@^1.0.4:
   version "1.0.4"
