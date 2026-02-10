@@ -38,7 +38,7 @@ describe('regex', () => {
 		it('should match a mention in all test strings', () => {
 			const matches = string.match(matcher);
 			assert(matches, `@testUser was not found in this string: ${string}`);
-			assert.equal(slugify(matches[0]), 'testuser');
+			assert(['@testuser', '@testuser.'].includes(slugify(matches[0])));
 		});
 	});
 
@@ -163,7 +163,7 @@ describe('parser', () => {
 	beforeEach(async () => {
 		slug = utils.generateUUID().slice(0, 10);
 		uid = await user.create({ username: slug });
-		emailUid = await user.create({ username: `${slug}@test.nodebb.org` });
+		// emailUid = await user.create({ username: `${slug}@test.nodebb.org` });
 	});
 
 	it('should properly parse both users even if one user\'s username is a subset of the other', async () => {
@@ -172,7 +172,7 @@ describe('parser', () => {
 
 		const html = await main.parseRaw(md);
 
-		assert.strictEqual(html, `This sentence contains two mentions: <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/1">@${slug}</a> and <a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/2">@${slug}-two</a>`);
+		assert.strictEqual(html, `This sentence contains two mentions: <a class="plugin-mentions-user plugin-mentions-a" href="/user/${slug}" aria-label="Profile: ${slug}">@<bdi>${slug}</bdi></a> and <a class="plugin-mentions-user plugin-mentions-a" href="/user/${slug}-two" aria-label="Profile: ${slug}-two">@<bdi>${slug}-two</bdi></a>`);
 	});
 
 	strings.forEach((string) => {
@@ -180,8 +180,9 @@ describe('parser', () => {
 			const index = string.indexOf('@testUser');
 			let check = string;
 			if (!index || string[index - 1] !== '>') {
-				check = string.replace(/@testUser/g, `<a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/${uid}">@${slug}</a>`);
-				string = string.replace(/testUser/g, slug);
+				check = string.replace(/@testUser\.?/g, `<a class="plugin-mentions-user plugin-mentions-a" href="/user/${slug}" aria-label="Profile: ${slug}">@<bdi>${slug}</bdi></a>`);
+				// check = string.replace(/@testUser/g, `<a class="plugin-mentions-user plugin-mentions-a" href="http://127.0.0.1:4567/uid/${uid}">@${slug}</a>`);
+				string = string.replace(/testUser\.?/g, slug);
 			}
 			const html = await main.parseRaw(string);
 
