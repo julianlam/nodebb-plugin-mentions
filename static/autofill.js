@@ -7,6 +7,7 @@ $(document).ready(function () {
 	const categorySlugMap = new Map();
 	let localUserList = [];
 	let helpers;
+	let groupTranslation = '';
 
 	function showAlert(type, message) {
 		require(['alerts'], function (alerts) {
@@ -24,6 +25,15 @@ $(document).ready(function () {
 		if (!categoryList) {
 			loadCategoryList();
 		}
+
+		if (!groupTranslation) {
+			require(['translator'], function (translator) {
+				translator.translate('[[groups:group]]', function (translation) {
+					groupTranslation = translation;
+				});
+			});
+		}
+
 		let slugify;
 		const strategy = {
 			match: /\B@([^\s\n]*)?$/,
@@ -62,8 +72,7 @@ $(document).ready(function () {
 						const groupMentions = groupList.filter(
 							group => group.name.toLocaleLowerCase().startsWith(termLowerCase) ||
 								group.slug.startsWith(termLowerCase)
-						).sort((a, b) =>a.name.toLocaleLowerCase() > b.name.toLocaleLowerCase() ? 1 : -1)
-							.map(group => group.name);
+						).sort((a, b) => a.name.toLocaleLowerCase() > b.name.toLocaleLowerCase() ? 1 : -1);
 
 						// Add group mentions at the bottom of dropdown
 						callback([...users, ...groupMentions]);
@@ -77,6 +86,8 @@ $(document).ready(function () {
 					return `@${mention.userslug} `;
 				} else if (mention.cid) {
 					return `@${utils.isNumber(mention.cid) ? mention.handle : mention.slug} `;
+				} else if (mention.isGroup) {
+					return `@${slugify(mention.name, true)} `;
 				} else if (mention) {
 					return `@${slugify(mention, true)} `;
 				}
@@ -118,6 +129,10 @@ $(document).ready(function () {
 			case entry.hasOwnProperty('cid'): {
 				const avatar = helpers.buildCategoryIcon(entry, '24px', 'rounded-circle');
 				return `${avatar} ${entry.name}${!utils.isNumber(entry.cid) ? ` (${entry.slug})` : ''}`;
+			}
+			case entry.isGroup: {
+				const icon = '<i class="fa-fw fa-solid fa-users text-secondary" style="width: 24px;"></i>';
+				return `${icon} ${entry.name} (${groupTranslation})`;
 			}
 
 			default:
@@ -164,7 +179,7 @@ $(document).ready(function () {
 				return showAlert('error', err.message);
 			}
 			const s = await app.require('slugify');
-			groupList = groupNames.map(name => ({ name, slug: s(name) }));
+			groupList = groupNames.map(name => ({ name, slug: s(name), isGroup: true }));
 		});
 	}
 
