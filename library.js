@@ -607,8 +607,10 @@ SocketPlugins.mentions.listGroups = async function () {
 	const noMentionGroups = await getNoMentionGroups();
 	const filteredGroups = groups.filter(g => g && !noMentionGroups.includes(g))
 		.map(g => validator.escape(String(g)));
-
-	return filteredGroups;
+	const fields = ['name', 'slug', 'icon', 'memberCount', 'labelColor', 'textColor'];
+	return (await Groups.getGroupsFields(filteredGroups, fields))
+		.filter(g => g && g.name && g.slug)
+		.map(g => ({ ..._.pick(g, fields), isGroup: true }));
 };
 
 SocketPlugins.mentions.userSearch = async (socket, data) => {

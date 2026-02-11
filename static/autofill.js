@@ -7,7 +7,6 @@ $(document).ready(function () {
 	const categorySlugMap = new Map();
 	let localUserList = [];
 	let helpers;
-	let groupTranslation = '';
 
 	function showAlert(type, message) {
 		require(['alerts'], function (alerts) {
@@ -24,14 +23,6 @@ $(document).ready(function () {
 
 		if (!categoryList) {
 			loadCategoryList();
-		}
-
-		if (!groupTranslation) {
-			require(['translator'], function (translator) {
-				translator.translate('[[groups:group]]', function (translation) {
-					groupTranslation = translation;
-				});
-			});
 		}
 
 		let slugify;
@@ -131,8 +122,12 @@ $(document).ready(function () {
 				return `${avatar} ${entry.name}${!utils.isNumber(entry.cid) ? ` (${entry.slug})` : ''}`;
 			}
 			case entry.isGroup: {
-				const icon = '<i class="fa-fw fa-solid fa-users text-secondary" style="width: 24px;"></i>';
-				return `${icon} ${entry.name} (${groupTranslation})`;
+				const icon = helpers.buildCategoryIcon({
+					icon: entry.icon || 'fa-users',
+					bgColor: entry.labelColor,
+					color: entry.textColor,
+				}, '24px', 'rounded-circle');
+				return `${icon} ${entry.name} <span class="text-sm text-secondary">(${entry.memberCountText})</span>`;
 			}
 
 			default:
@@ -173,14 +168,14 @@ $(document).ready(function () {
 		});
 	}
 
-	function loadGroupList() {
-		socket.emit('plugins.mentions.listGroups', async function (err, groupNames) {
-			if (err) {
-				return showAlert('error', err.message);
-			}
-			const s = await app.require('slugify');
-			groupList = groupNames.map(name => ({ name, slug: s(name), isGroup: true }));
-		});
+	async function loadGroupList() {
+		groupList = await socket.emit('plugins.mentions.listGroups');
+		const [translator, helpers] = await app.require(['translator', 'helpers']);
+		await Promise.all(groupList.map(async (group) => {
+			group.memberCount = 12312313;
+			const key = translator.compile('groups:x-members', helpers.formattedNumber(group.memberCount));
+			group.memberCountText = await translator.translate(key);
+		}));
 	}
 
 	function loadCategoryList() {
