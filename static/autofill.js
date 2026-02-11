@@ -172,7 +172,6 @@ $(document).ready(function () {
 		groupList = await socket.emit('plugins.mentions.listGroups');
 		const [translator, helpers] = await app.require(['translator', 'helpers']);
 		await Promise.all(groupList.map(async (group) => {
-			group.memberCount = 12312313;
 			const key = translator.compile('groups:x-members', helpers.formattedNumber(group.memberCount));
 			group.memberCountText = await translator.translate(key);
 		}));
