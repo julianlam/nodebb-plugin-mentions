@@ -10,7 +10,6 @@ const nconf = require.main.require('nconf');
 const winston = require.main.require('winston');
 
 const db = require.main.require('./src/database');
-const api = require.main.require('./src/api');
 const meta = require.main.require('./src/meta');
 const categories = require.main.require('./src/categories');
 const Topics = require.main.require('./src/topics');
@@ -27,6 +26,7 @@ const batch = require.main.require('./src/batch');
 const utils = require.main.require('./src/utils');
 const SocketPlugins = require.main.require('./src/socket.io/plugins');
 const translator = require.main.require('./src/translator');
+const privileges = require.main.require('./src/privileges');
 
 const utility = require('./lib/utility');
 
@@ -40,10 +40,9 @@ const isLatinMention = /@[\w\d\-_.@]+$/;
 
 const Mentions = module.exports;
 
-Mentions._settings = {};
 Mentions._defaults = {
 	disableFollowedTopics: 'off',
-	autofillGroups: 'off',
+	autofillGroups: 'on',
 	disableGroupMentions: '[]',
 	overrideIgnores: 'off',
 	display: '',
@@ -57,10 +56,12 @@ Mentions.init = async (data) => {
 	const controllers = require('./controllers');
 
 	routeHelpers.setupAdminPageRoute(data.router, '/admin/plugins/mentions', controllers.renderAdminPage);
-
-	// Retrieve settings
-	Object.assign(Mentions._settings, Mentions._defaults, await Meta.settings.get('mentions'));
 };
+
+async function getSettings() {
+	const settings = await Meta.settings.get('mentions');
+	return { ...Mentions._defaults, ...settings };
+}
 
 Mentions.addAdminNavigation = async (header) => {
 	header.plugins.push({
@@ -71,10 +72,11 @@ Mentions.addAdminNavigation = async (header) => {
 	return header;
 };
 
-function getNoMentionGroups() {
-	let noMentionGroups = ['registered-users', 'verified-users', 'unverified-users', 'guests'];
+async function getNoMentionGroups() {
+	let noMentionGroups = ['registered-users', 'verified-users', 'unverified-users', 'guests', 'banned-users'];
 	try {
-		noMentionGroups = noMentionGroups.concat(JSON.parse(Mentions._settings.disableGroupMentions));
+		const settings = await getSettings();
+		noMentionGroups = noMentionGroups.concat(JSON.parse(settings.disableGroupMentions));
 	} catch (err) {
 		winston.error(err);
 	}
@@ -93,7 +95,7 @@ Mentions.notify = async function ({ post }) {
 			return;
 		}
 
-		const noMentionGroups = getNoMentionGroups();
+		const noMentionGroups = await getNoMentionGroups();
 		matches = _.uniq(
 			matches
 				.map(match => slugify(match.slice(1)))
@@ -129,11 +131,11 @@ Mentions.notify = async function ({ post }) {
 	if ((!uidsToNotify && !groupsToNotify) || (!uidsToNotify.length && !groupsToNotify.length)) {
 		return;
 	}
-
+	const settings = await getSettings();
 	const [topic, userData, topicFollowers] = await Promise.all([
 		Topics.getTopicFields(post.tid, ['title', 'cid']),
 		User.getUserFields(post.uid, ['username']),
-		Mentions._settings.disableFollowedTopics === 'on' ? Topics.getFollowers(post.tid) : [],
+		settings.disableFollowedTopics === 'on' ? Topics.getFollowers(post.tid) : [],
 	]);
 	const { displayname } = userData;
 	const title = entitiesDecode(topic.title);
@@ -142,7 +144,7 @@ Mentions.notify = async function ({ post }) {
 		uid => uid !== postOwner && !topicFollowers.includes(uid)
 	);
 
-	if (Mentions._settings.privilegedDirectReplies === 'on') {
+	if (settings.privilegedDirectReplies === 'on') {
 		const toPid = await posts.getPostField(post.pid, 'toPid');
 		uids = await filterPrivilegedUids(uids, post.cid, toPid);
 	}
@@ -298,10 +300,10 @@ async function sendNotificationToUids(postData, uids, nidType, notificationText)
 	if (!notification) {
 		return;
 	}
-
+	const settings = await getSettings();
 	await batch.processArray(uids, async (uids) => {
 		uids = await Privileges.topics.filterUids('read', postData.tid, uids);
-		if (Mentions._settings.overrideIgnores !== 'on') {
+		if (settings.overrideIgnores !== 'on') {
 			uids = await Topics.filterIgnoringUids(postData.tid, uids);
 		}
 		filteredUids.push(...uids);
@@ -423,6 +425,8 @@ Mentions.parseRaw = async (content, type = 'default') => {
 		return content;
 	}
 
+	const settings = await getSettings();
+
 	matches = _.uniq(matches).map((match) => {
 		/**
 		 * Javascript-flavour of regex does not support lookaround,
@@ -480,6 +484,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 		}
 	}));
 
+
 	replacements = Array.from(replacements)
 		.sort((a, b) => {
 			return b.user.userslug.length - a.user.userslug.length;
@@ -502,7 +507,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 					const plain = match.slice(0, atIndex);
 					match = match.slice(atIndex + 1);
 					if (user && user.uid) {
-						switch (Mentions._settings.display) {
+						switch (settings.display) {
 							case 'fullname':
 								match = user.displayname || match;
 								break;
@@ -514,9 +519,9 @@ Mentions.parseRaw = async (content, type = 'default') => {
 
 					let str;
 					if (type === 'markdown') {
-						str = `[${!Mentions._settings.display ? '@' : ''}${match}](${nconf.get('url')}${url})`;
+						str = `[${!settings.display ? '@' : ''}${match}](${nconf.get('url')}${url})`;
 					} else {
-						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${nconf.get('relative_path')}${url}" aria-label="Profile: ${match}">${!Mentions._settings.display ? '@' : ''}<bdi>${match}</bdi></a>`;
+						str = `<a class="plugin-mentions-${mentionType} plugin-mentions-a" href="${nconf.get('relative_path')}${url}" aria-label="Profile: ${match}">${!settings.display ? '@' : ''}<bdi>${match}</bdi></a>`;
 					}
 
 					return plain + str;
@@ -562,17 +567,18 @@ async function filterPrivilegedUids(uids, cid, toPid) {
 }
 
 async function filterDisallowedFullnames(users) {
+	if (!users.length) return [];
 	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
-	return users.filter((user, index) => userSettings[index].showfullname);
+	return users.filter((user, index) => userSettings[index] && userSettings[index].showfullname);
 }
 
 async function stripDisallowedFullnames(users) {
+	if (!users.length) return [];
 	const userSettings = await User.getMultipleUserSettings(users.map(user => user.uid));
-	return users.map((user, index) => {
-		if (!userSettings[index].showfullname) {
+	users.forEach((user, index) => {
+		if (user && userSettings[index] && !userSettings[index].showfullname) {
 			user.fullname = null;
 		}
-		return user;
 	});
 }
 
@@ -587,39 +593,62 @@ SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
 	if (Meta.config.hideFullname) {
 		return users;
 	}
-	return stripDisallowedFullnames(users);
+	await stripDisallowedFullnames(users);
+	return users;
 };
 
 SocketPlugins.mentions.listGroups = async function () {
-	if (Mentions._settings.autofillGroups === 'off') {
+	const settings = await getSettings();
+	if (settings.autofillGroups === 'off') {
 		return [];
 	}
 
 	const groups = await Groups.getGroups('groups:visible:createtime', 0, -1);
-	const noMentionGroups = getNoMentionGroups();
-	return groups.filter(g => g && !noMentionGroups.includes(g)).map(g => validator.escape(String(g)));
+	const noMentionGroups = await getNoMentionGroups();
+	const filteredGroups = groups.filter(g => g && !noMentionGroups.includes(g))
+		.map(g => validator.escape(String(g)));
+
+	return filteredGroups;
 };
 
 SocketPlugins.mentions.userSearch = async (socket, data) => {
-	// Search by username
-	let { users } = await api.users.search(socket, data);
-
-	if (!Meta.config.hideFullname) {
-		// Strip fullnames of users that do not allow their full name to be visible
-		users = await stripDisallowedFullnames(users);
-
-		// Search by fullname
-		let { users: fullnameUsers } = await api.users.search(socket, { query: data.query, searchBy: 'fullname' });
-		// Hide results of users that do not allow their full name to be visible (prevents "enumeration attack")
-		fullnameUsers = await filterDisallowedFullnames(fullnameUsers);
-
-		// Merge results, filter duplicates (from username search, leave fullname results)
-		users = users.filter(
-			userObj => fullnameUsers.filter(userObj2 => userObj.uid === userObj2.uid).length === 0
-		).concat(fullnameUsers);
+	const allowed = await privileges.global.can('search:users', socket.uid);
+	if (!allowed) {
+		throw new Error('[[error:no-privileges]]');
 	}
 
-	if (Mentions._settings.privilegedDirectReplies === 'on') {
+	const searchOpts = {
+		uid: socket.uid,
+		query: data.query,
+		sortBy: 'postcount',
+		hardCap: 1000,
+		paginate: true,
+		resultsPerPage: 100,
+	};
+
+	const [byUsername, byFullname, settings] = await Promise.all([
+		User.search({ ...searchOpts, searchBy: 'username' }),
+		!Meta.config.hideFullname ?
+			User.search({ ...searchOpts, searchBy: 'fullname' }) :
+			Promise.resolve({ users : [] }),
+		getSettings(),
+	]);
+
+	let { users } = byUsername;
+
+	const [fullnameUsers] = await Promise.all([
+		// Hide results of users that do not allow their full name to be visible (prevents "enumeration attack")
+		filterDisallowedFullnames(byFullname.users),
+		// Strip fullnames of users that do not allow their full name to be visible
+		stripDisallowedFullnames(users),
+	]);
+
+	// Merge results, filter duplicates (from username search, leave fullname results)
+	const fullnameUidSet = new Set(fullnameUsers.map(u => u.uid));
+	users = users.filter(u => !fullnameUidSet.has(u.uid)).concat(fullnameUsers);
+	users.sort((a, b) => b.postcount - a.postcount);
+
+	if (settings.privilegedDirectReplies === 'on') {
 		if (data.composerObj) {
 			const cid = Topics.getTopicField(data.composerObj.tid, 'cid');
 			const filteredUids = await filterPrivilegedUids(users.map(userObj => userObj.uid), cid, data.composerObj.toPid);

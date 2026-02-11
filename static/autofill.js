@@ -8,6 +8,12 @@ $(document).ready(function () {
 	let localUserList = [];
 	let helpers;
 
+	function showAlert(type, message) {
+		require(['alerts'], function (alerts) {
+			alerts[type](message);
+		});
+	}
+
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
 		loadTopicUsers(data.element);
 
@@ -36,37 +42,30 @@ $(document).ready(function () {
 						composerObj: composer.posts[uuid],
 					}, function (err, users) {
 						if (err) {
-							require(['alerts'], function (alerts) {
-								alerts.alert({
-									id: 'mention-error',
-									type: 'danger',
-									message: err.message,
-									timeout: 5000,
-								});
-							});
+							showAlert('error', err.message);
 							return callback([]);
 						}
 						const termLowerCase = term.toLocaleLowerCase();
 						const localMatches = localUserList.filter(
 							u => u.username.toLocaleLowerCase().startsWith(termLowerCase)
 						);
-						const categoryMatches = categoryList.filter(c => c && c.handle && c.handle.startsWith(termLowerCase));
+						const categoryMatches = categoryList.filter(
+							c => c && c.handle && c.handle.startsWith(termLowerCase)
+						);
 
 						// remove local matches from search results, add category matches
 						users = users.filter(u => !localMatches.find(lu => lu.uid === u.uid));
-						users = sortEntries(localMatches).concat(sortEntries([...users, ...categoryMatches]));
-						// mentions = entriesToMentions(users, helpers);
+
+						users = sortEntries(localMatches).concat(users).concat(sortEntries(categoryMatches));
 
 						// Add groups that start with the search term
-						const groupMentions = groupList.filter(function (groupName) {
-							return groupName.toLocaleLowerCase().startsWith(termLowerCase);
-						}).sort(function (a, b) {
-							return a.toLocaleLowerCase() > b.toLocaleLowerCase() ? 1 : -1;
-						});
+						const groupMentions = groupList.filter(
+							group => group.name.toLocaleLowerCase().startsWith(termLowerCase) ||
+								group.slug.startsWith(termLowerCase)
+						).sort((a, b) =>a.name.toLocaleLowerCase() > b.name.toLocaleLowerCase() ? 1 : -1)
+							.map(group => group.name);
 
 						// Add group mentions at the bottom of dropdown
-						// mentions = mentions.concat(groupMentions);
-
 						callback([...users, ...groupMentions]);
 					});
 				});
@@ -86,6 +85,12 @@ $(document).ready(function () {
 		};
 
 		data.strategies.push(strategy);
+		data.options = {
+			...data.options,
+			...{
+				maxCount: 100,
+			},
+		};
 	});
 
 	$(window).on('action:composer.loaded', function (ev, data) {
@@ -121,7 +126,7 @@ $(document).ready(function () {
 	}
 
 	function loadTopicUsers(element) {
-		require(['composer', 'alerts'], function (composer, alerts) {
+		require(['composer'], function (composer) {
 			function findTid() {
 				const composerEl = element.parents('.composer').get(0);
 				if (composerEl) {
@@ -146,7 +151,7 @@ $(document).ready(function () {
 				tid: tid,
 			}, function (err, users) {
 				if (err) {
-					return alerts.error(err);
+					return showAlert('error', err);
 				}
 				localUserList = users;
 			});
@@ -154,14 +159,12 @@ $(document).ready(function () {
 	}
 
 	function loadGroupList() {
-		socket.emit('plugins.mentions.listGroups', function (err, groupNames) {
+		socket.emit('plugins.mentions.listGroups', async function (err, groupNames) {
 			if (err) {
-				require(['alerts'], function (alerts) {
-					alerts.error(err);
-				});
-				return;
+				return showAlert('error', err.message);
 			}
-			groupList = groupNames;
+			const s = await app.require('slugify');
+			groupList = groupNames.map(name => ({ name, slug: s(name) }));
 		});
 	}
 
