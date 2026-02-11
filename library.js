@@ -487,7 +487,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 
 	replacements = Array.from(replacements)
 		.sort((a, b) => {
-			return b.user.userslug.length - a.user.userslug.length;
+			return b.user && a.user ? b.user.userslug.length - a.user.userslug.length : 0;
 		})
 		.forEach(({ match, url, user, mentionType }) => {
 			const regex = isLatinMention.test(match) ?
