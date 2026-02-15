@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "html-entities": "^2.3.2",
-    "lodash": "4.17.21",
+    "lodash": "4.17.23",
     "validator": "^13.0.0"
   },
   "devDependencies": {
