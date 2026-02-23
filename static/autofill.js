@@ -2,10 +2,10 @@
 'use strict';
 
 $(document).ready(function () {
-	let groupList = [];
+	let groupList;
+	let localUserList;
 	let categoryList;
 	const categorySlugMap = new Map();
-	let localUserList = [];
 	let helpers;
 
 	function showAlert(type, message) {
@@ -15,15 +15,14 @@ $(document).ready(function () {
 	}
 
 	$(window).on('composer:autocomplete:init chat:autocomplete:init', function (ev, data) {
-		loadTopicUsers(data.element);
-
-		if (!groupList.length) {
-			loadGroupList();
-		}
-
-		if (!categoryList) {
-			loadCategoryList();
-		}
+		// load the data for lists on focus of textarea element
+		data.element.one('focus', async function () {
+			await Promise.all([
+				loadTopicUsers(data.element),
+				groupList ? Promise.resolve() : loadGroupList(),
+				categoryList ? Promise.resolve() : loadCategoryList(),
+			]);
+		});
 
 		let slugify;
 		const strategy = {
@@ -135,37 +134,31 @@ $(document).ready(function () {
 		}
 	}
 
-	function loadTopicUsers(element) {
-		require(['composer'], function (composer) {
-			function findTid() {
-				const composerEl = element.parents('.composer').get(0);
-				if (composerEl) {
-					const uuid = composerEl.getAttribute('data-uuid');
-					const composerObj = composer.posts[uuid];
-					if (composerObj && composerObj.tid) {
-						return composerObj.tid;
-					}
+	async function loadTopicUsers(element) {
+		const composer = await app.require('composer');
+		function findTid() {
+			const composerEl = element.parents('.composer').get(0);
+			if (composerEl) {
+				const uuid = composerEl.getAttribute('data-uuid');
+				const composerObj = composer.posts[uuid];
+				if (composerObj && composerObj.tid) {
+					return composerObj.tid;
 				}
-				if (ajaxify.data.template.topic) {
-					return ajaxify.data.tid;
-				}
-				return null;
 			}
+			if (ajaxify.data.template.topic) {
+				return ajaxify.data.tid;
+			}
+			return null;
+		}
 
-			const tid = findTid();
-			if (!tid) {
-				localUserList = [];
-				return;
-			}
-			socket.emit('plugins.mentions.getTopicUsers', {
-				tid: tid,
-			}, function (err, users) {
-				if (err) {
-					return showAlert('error', err);
-				}
-				localUserList = users;
-			});
-		});
+		const tid = findTid();
+		if (!tid) {
+			localUserList = [];
+			return;
+		}
+		localUserList = await socket.emit('plugins.mentions.getTopicUsers', {
+			tid: tid,
+		}).catch(err => showAlert('error', err));
 	}
 
 	async function loadGroupList() {
@@ -177,13 +170,12 @@ $(document).ready(function () {
 		}));
 	}
 
-	function loadCategoryList() {
-		require(['api'], async (api) => {
-			const { categories } = await api.get('/categories');
-			categoryList = categories;
-			categories.forEach((category) => {
-				categorySlugMap.set(category.name.toLowerCase(), category.handle);
-			});
+	async function loadCategoryList() {
+		const api = await app.require('api');
+		const { categories } = await api.get('/categories');
+		categoryList = categories;
+		categories.forEach((category) => {
+			categorySlugMap.set(category.name.toLowerCase(), category.handle);
 		});
 	}
 });
