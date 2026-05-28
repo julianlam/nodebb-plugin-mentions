@@ -32,7 +32,7 @@ const utility = require('./lib/utility');
 
 const parts = {
 	before: '(?<=(^|\\P{L}))', // a single unicode non-letter character or start of line
-	main: '(@[\\p{L}\\d\\-_.@]+(?<![.-]))', // unicode letters, numbers, dashes, underscores, or periods, negative lookbehind to guard against periods/dashes at end
+	main: '(@[\\p{L}\\d\\-_.@]+(?<!-))', // unicode letters, numbers, dashes, underscores, or periods; negative lookbehind keeps trailing periods so usernames ending in `.` resolve before the fallback below strips them
 	after: '((?=\\b)(?=[^-])|(?=[^\\p{L}\\d\\-_.@])|$)', // used to figure out where latin mentions end
 };
 const regex = RegExp(`${parts.before}${parts.main}`, 'gu');
@@ -440,16 +440,37 @@ Mentions.parseRaw = async (content, type = 'default') => {
 	// Convert matches to anchor html
 	let replacements = new Set();
 	await Promise.all(matches.map(async (match) => {
-		const slug = slugify(match.slice(1));
-		match = removePunctuationSuffix(match);
-		let cid = 0;
+		let slug = slugify(match.slice(1));
+		let uid = await User.getUidByUserslug(slug);
 		let groupExists = 0;
-		const uid = await User.getUidByUserslug(slug);
+		let cid = 0;
 		if (!uid) {
 			({ groupExists, cid } = await utils.promiseParallel({
 				groupExists: Groups.existsBySlug(slug),
 				cid: categories.getCidByHandle(slug),
 			}));
+		}
+		// Fallback: if nothing resolved and the match has trailing punctuation,
+		// strip it and retry. This preserves the "@user." at end-of-sentence
+		// behaviour while also supporting usernames that legitimately end in
+		// a period (which can occur when slugify preserves trailing dots for
+		// non-Latin handles).
+		if (!uid && !groupExists && !cid) {
+			const stripped = removePunctuationSuffix(match);
+			if (stripped !== match && stripped.length > 1) {
+				const strippedSlug = slugify(stripped.slice(1));
+				uid = await User.getUidByUserslug(strippedSlug);
+				if (!uid) {
+					({ groupExists, cid } = await utils.promiseParallel({
+						groupExists: Groups.existsBySlug(strippedSlug),
+						cid: categories.getCidByHandle(strippedSlug),
+					}));
+				}
+				if (uid || groupExists || cid) {
+					slug = strippedSlug;
+					match = stripped;
+				}
+			}
 		}
 
 		if (uid || groupExists || cid) {
@@ -490,9 +511,13 @@ Mentions.parseRaw = async (content, type = 'default') => {
 			return b.user && a.user ? b.user.userslug.length - a.user.userslug.length : 0;
 		})
 		.forEach(({ match, url, user, mentionType }) => {
+			// Escape regex specials in `match` — usernames may legitimately
+			// contain `.` (and slugify preserves it for non-Latin handles),
+			// which would otherwise be interpreted as the regex any-char.
+			const escapedMatch = match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 			const regex = isLatinMention.test(match) ?
-				RegExp(`${parts.before}${match}${parts.after}`, 'gu') :
-				RegExp(`${parts.before}${match}`, 'gu');
+				RegExp(`${parts.before}${escapedMatch}${parts.after}`, 'gu') :
+				RegExp(`${parts.before}${escapedMatch}`, 'gu');
 			let skip = false;
 			splitContent = splitContent.map((c, i) => {
 				// *Might* not be needed anymore? Check pls...

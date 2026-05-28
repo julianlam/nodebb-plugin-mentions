@@ -190,6 +190,18 @@ describe('parser', () => {
 
 			assert.strictEqual(html, check);
 		});
+		it('should resolve a mention when the username itself ends in a period', async () => {
+			const slugWithDot = `${utils.generateUUID().slice(0, 8)}.`;
+			const dotUid = await user.create({ username: slugWithDot });
+			assert(dotUid);
+
+			const html = await main.parseRaw(`hello @${slugWithDot} there`);
+			assert.strictEqual(
+				html,
+				`hello <a class="plugin-mentions-user plugin-mentions-a" href="/user/${encodeURIComponent(slugWithDot)}" aria-label="Profile: ${slugWithDot}">@<bdi>${slugWithDot}</bdi></a> there`
+			);
+		});
+
 		// re-enable this when NodeBB slugify doesn't strip out `@` from usernames
 		it.skip('should match correctly email-like mentions in all test strings', async () => {
 			const index = string.indexOf('@testUser');
