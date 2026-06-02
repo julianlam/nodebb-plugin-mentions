@@ -226,7 +226,7 @@ Mentions.notifyMessage = async (hookData) => {
 	const icon = Messaging.getRoomIcon(roomData);
 	const notifObj = await Notifications.create({
 		type: 'mention',
-		bodyShort: `[[notifications:user-mentioned-you-in-room, ${fromUser.displayname}, ${icon}, ${roomName}]]`,
+		bodyShort: translator.compile('notifications:user-mentioned-you-in-room', fromUser.displayname, icon, roomName),
 		bodyLong: parsedMessage,
 		nid: `chat_${roomId}_${message.fromuid}_${message.mid}`,
 		mid: message.mid,
