@@ -4,17 +4,17 @@
 
 const assert = require('assert');
 
-const user = require.main.require('./src/user');
-const utils = require.main.require('./src/utils');
+const user = nodebb.require('./src/user');
+const utils = nodebb.require('./src/utils');
 
 const main = require('../library');
 
 const regex = main._regex;
 
-/* const db = */require.main.require('./test/mocks/databasemock');
+/* const db = */nodebb.require('./test/mocks/databasemock');
 
 // use core slugify module
-const slugify = require.main.require('./src/slugify');
+const slugify = nodebb.require('./src/slugify');
 
 const strings = [
 	'@testUser',

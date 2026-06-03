@@ -6,27 +6,27 @@ const _ = require('lodash');
 const validator = require('validator');
 const entitiesDecode = require('html-entities').decode;
 
-const nconf = require.main.require('nconf');
-const winston = require.main.require('winston');
+const nconf = nodebb.require('nconf');
+const winston = nodebb.require('winston');
 
-const db = require.main.require('./src/database');
-const meta = require.main.require('./src/meta');
-const categories = require.main.require('./src/categories');
-const Topics = require.main.require('./src/topics');
-const posts = require.main.require('./src/posts');
-const User = require.main.require('./src/user');
-const Groups = require.main.require('./src/groups');
-const Messaging = require.main.require('./src/messaging');
-const Notifications = require.main.require('./src/notifications');
-const Privileges = require.main.require('./src/privileges');
-const plugins = require.main.require('./src/plugins');
-const Meta = require.main.require('./src/meta');
-const slugify = require.main.require('./src/slugify');
-const batch = require.main.require('./src/batch');
-const utils = require.main.require('./src/utils');
-const SocketPlugins = require.main.require('./src/socket.io/plugins');
-const translator = require.main.require('./src/translator');
-const privileges = require.main.require('./src/privileges');
+const db = nodebb.require('./src/database');
+const meta = nodebb.require('./src/meta');
+const categories = nodebb.require('./src/categories');
+const Topics = nodebb.require('./src/topics');
+const posts = nodebb.require('./src/posts');
+const User = nodebb.require('./src/user');
+const Groups = nodebb.require('./src/groups');
+const Messaging = nodebb.require('./src/messaging');
+const Notifications = nodebb.require('./src/notifications');
+const Privileges = nodebb.require('./src/privileges');
+const plugins = nodebb.require('./src/plugins');
+const Meta = nodebb.require('./src/meta');
+const slugify = nodebb.require('./src/slugify');
+const batch = nodebb.require('./src/batch');
+const utils = nodebb.require('./src/utils');
+const SocketPlugins = nodebb.require('./src/socket.io/plugins');
+const translator = nodebb.require('./src/translator');
+const privileges = nodebb.require('./src/privileges');
 
 const utility = require('./lib/utility');
 
@@ -52,7 +52,7 @@ Mentions._regex = regex;
 SocketPlugins.mentions = {};
 
 Mentions.init = async (data) => {
-	const routeHelpers = require.main.require('./src/routes/helpers');
+	const routeHelpers = nodebb.require('./src/routes/helpers');
 	const controllers = require('./controllers');
 
 	routeHelpers.setupAdminPageRoute(data.router, '/admin/plugins/mentions', controllers.renderAdminPage);
@@ -200,7 +200,7 @@ Mentions.notifyMessage = async (hookData) => {
 	if (!roomData || !matchedUids.length || !roomData.public) {
 		return;
 	}
-	const io = require.main.require('./src/socket.io');
+	const io = nodebb.require('./src/socket.io');
 
 	const [onlineUidsInRoom, fromUser, isUserInRoom, notifSettings, parsedMessage, checks] = await Promise.all([
 		io.getUidsInRoom(`chat_room_${roomId}`),

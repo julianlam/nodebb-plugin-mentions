@@ -1,6 +1,6 @@
 'use strict';
 
-const groups = require.main.require('./src/groups');
+const groups = nodebb.require('./src/groups');
 
 const Controllers = module.exports;
 
