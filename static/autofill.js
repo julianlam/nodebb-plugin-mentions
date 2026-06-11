@@ -53,9 +53,20 @@ $(document).ready(function () {
 							c => c && c.handle && c.handle.startsWith(termLowerCase)
 						);
 
-						// remove local matches from search results, add category matches
+						// Remove local matches from search results
 						users = users.filter(u => !localMatches.find(lu => lu.uid === u.uid));
 
+						// Float local accounts (numeric uids) to the top
+						users.sort((a, b) => {
+							const localA = utils.isNumber(a.uid);
+							const localB = utils.isNumber(b.uid);
+							if (localA !== localB) {
+								return localA ? -1 : 1;
+							}
+							return b.postcount - a.postcount;
+						});
+
+						// Add category matches
 						users = sortEntries(localMatches).concat(users).concat(sortEntries(categoryMatches));
 
 						// Add groups that start with the search term
