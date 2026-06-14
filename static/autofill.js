@@ -5,7 +5,6 @@ $(document).ready(function () {
 	let groupList;
 	let localUserList;
 	let categoryList;
-	const categorySlugMap = new Map();
 	let helpers;
 
 	function showAlert(type, message) {
@@ -67,7 +66,9 @@ $(document).ready(function () {
 						});
 
 						// Add category matches
-						users = sortEntries(localMatches).concat(users).concat(sortEntries(categoryMatches));
+						users = sortEntries(localMatches)
+							.concat(users)
+							.concat(sortEntries(categoryMatches));
 
 						// Add groups that start with the search term
 						const groupMentions = groupList.filter(
@@ -124,12 +125,13 @@ $(document).ready(function () {
 			case entry.hasOwnProperty('uid'): {
 				const avatar = helpers.buildAvatar(entry, '24px', true);
 				const fullname = entry.fullname ? `(${entry.fullname})` : '';
-				return `${avatar} ${entry.username || entry.name} ${helpers.escape(fullname)}`;
+				return `${avatar} ${helpers.escape(entry.username || entry.name)} ${helpers.escape(fullname)}`;
 			}
 
 			case entry.hasOwnProperty('cid'): {
 				const avatar = helpers.buildCategoryIcon(entry, '24px', 'rounded-circle');
-				return `${avatar} ${entry.name}${!utils.isNumber(entry.cid) ? ` (${entry.slug})` : ''}`;
+				const slug = !utils.isNumber(entry.cid) ? `(${entry.slug})` : '';
+				return `${avatar} ${helpers.escape(entry.name)}${helpers.escape(slug)}`;
 			}
 			case entry.isGroup: {
 				const icon = helpers.buildCategoryIcon({
@@ -137,7 +139,7 @@ $(document).ready(function () {
 					bgColor: entry.labelColor,
 					color: entry.textColor,
 				}, '24px', 'rounded-circle');
-				return `${icon} ${entry.name} <span class="text-sm text-secondary">(${entry.memberCountText})</span>`;
+				return `${icon} ${helpers.escape(entry.name)} <span class="text-sm text-secondary">(${entry.memberCountText})</span>`;
 			}
 
 			default:
@@ -174,19 +176,19 @@ $(document).ready(function () {
 
 	async function loadGroupList() {
 		groupList = await socket.emit('plugins.mentions.listGroups');
-		const [translator, helpers] = await app.require(['translator', 'helpers']);
+		const [tx, helpers] = await app.require(['translator', 'helpers']);
 		await Promise.all(groupList.map(async (group) => {
-			const key = translator.compile('groups:x-members', helpers.formattedNumber(group.memberCount));
-			group.memberCountText = await translator.translate(key);
+			const key = tx.compile('groups:x-members', helpers.formattedNumber(group.memberCount));
+			group.memberCountText = await tx.translateKey(key);
 		}));
 	}
 
 	async function loadCategoryList() {
-		const api = await app.require('api');
+		const [api, tx] = await app.require(['api', 'translator']);
 		const { categories } = await api.get('/categories');
 		categoryList = categories;
-		categories.forEach((category) => {
-			categorySlugMap.set(category.name.toLowerCase(), category.handle);
-		});
+		await Promise.all(categories.map(async (category) => {
+			category.name = await tx.translateKey(category.name);
+		}));
 	}
 });

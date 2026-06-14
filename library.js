@@ -3,8 +3,6 @@
 'use strict';
 
 const _ = require('lodash');
-const validator = require('validator');
-const entitiesDecode = require('html-entities').decode;
 
 const nconf = nodebb.require('nconf');
 const winston = nodebb.require('winston');
@@ -25,7 +23,7 @@ const slugify = nodebb.require('./src/slugify');
 const batch = nodebb.require('./src/batch');
 const utils = nodebb.require('./src/utils');
 const SocketPlugins = nodebb.require('./src/socket.io/plugins');
-const translator = nodebb.require('./src/translator');
+const tx = nodebb.require('./src/translator');
 const privileges = nodebb.require('./src/privileges');
 
 const utility = require('./lib/utility');
@@ -132,13 +130,11 @@ Mentions.notify = async function ({ post }) {
 		return;
 	}
 	const settings = await getSettings();
-	const [topic, userData, topicFollowers] = await Promise.all([
-		Topics.getTopicFields(post.tid, ['title', 'cid']),
-		User.getUserFields(post.uid, ['username']),
+	const [displayname, title, topicFollowers] = await Promise.all([
+		User.getNotificationDisplayname(post.uid),
+		Topics.getNotificationTitle(post.tid),
 		settings.disableFollowedTopics === 'on' ? Topics.getFollowers(post.tid) : [],
 	]);
-	const { displayname } = userData;
-	const title = entitiesDecode(topic.title);
 
 	let uids = uidsToNotify.filter(
 		uid => uid !== postOwner && !topicFollowers.includes(uid)
@@ -164,7 +160,7 @@ Mentions.notify = async function ({ post }) {
 
 	const filteredUids = await filterUidsAlreadyMentioned(uids, post.pid);
 	if (filteredUids.length) {
-		const notifText = translator.compile('notifications:user-mentioned-you-in', displayname, title);
+		const notifText = tx.compile('notifications:user-mentioned-you-in', displayname, title);
 		await sendNotificationToUids(post, filteredUids, 'user', notifText);
 		await db.setAdd(`mentions:pid:${post.pid}:uids`, filteredUids);
 	}
@@ -175,7 +171,7 @@ Mentions.notify = async function ({ post }) {
 			const groupName = groupsToNotify[i].name;
 			const groupMentionSent = await db.isSetMember(`mentions:pid:${post.pid}:groups`, groupName);
 			if (!groupMentionSent && memberUids.length) {
-				const notifText = translator.compile('notifications:user-mentioned-group-in', displayname, groupName, title);
+				const notifText = tx.compile('notifications:user-mentioned-group-in', displayname, tx.escape(groupName), title);
 				await sendNotificationToUids(post, memberUids, groupName, notifText);
 				await db.setAdd(`mentions:pid:${post.pid}:groups`, groupName);
 			}
@@ -202,9 +198,9 @@ Mentions.notifyMessage = async (hookData) => {
 	}
 	const io = nodebb.require('./src/socket.io');
 
-	const [onlineUidsInRoom, fromUser, isUserInRoom, notifSettings, parsedMessage, checks] = await Promise.all([
+	const [onlineUidsInRoom, displayname, isUserInRoom, notifSettings, parsedMessage, checks] = await Promise.all([
 		io.getUidsInRoom(`chat_room_${roomId}`),
-		User.getUserFields(message.fromuid, ['username']),
+		User.getNotificationDisplayname(message.fromuid, ['username']),
 		Messaging.isUsersInRoom(matchedUids, roomId),
 		Messaging.getUidsNotificationSetting(matchedUids, roomId),
 		Messaging.parse(message.content, message.fromuid, 0, message.roomId, false),
@@ -222,11 +218,11 @@ Mentions.notifyMessage = async (hookData) => {
 	if (!uidsToNotify.length) {
 		return;
 	}
-	const roomName = validator.escape(String(roomData.roomName || `Room ${roomId}`));
+	const roomName = tx.escape(roomData.roomName) || `Room ${roomId}`;
 	const icon = Messaging.getRoomIcon(roomData);
 	const notifObj = await Notifications.create({
 		type: 'mention',
-		bodyShort: translator.compile('notifications:user-mentioned-you-in-room', fromUser.displayname, icon, roomName),
+		bodyShort: tx.compile('notifications:user-mentioned-you-in-room', displayname, icon, roomName),
 		bodyLong: parsedMessage,
 		nid: `chat_${roomId}_${message.fromuid}_${message.mid}`,
 		mid: message.mid,
@@ -634,8 +630,9 @@ SocketPlugins.mentions.listGroups = async function () {
 
 	const groups = await Groups.getGroups('groups:visible:createtime', 0, -1);
 	const noMentionGroups = await getNoMentionGroups();
-	const filteredGroups = groups.filter(g => g && !noMentionGroups.includes(g))
-		.map(g => validator.escape(String(g)));
+	const filteredGroups = groups.filter(g => g && !noMentionGroups.includes(g));
+
+
 	const fields = ['name', 'slug', 'icon', 'memberCount', 'labelColor', 'textColor'];
 	return (await Groups.getGroupsFields(filteredGroups, fields))
 		.filter(g => g && g.name && g.slug)
