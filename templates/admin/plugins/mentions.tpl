@@ -21,10 +21,10 @@
 					</div>
 					<div class="mb-3">
 						<label class="form-label" for="disableGroupMentions">Select groups you wish to disable mentions</label>
-						<select class="form-select" id="disableGroupMentions" name="disableGroupMentions" multiple>
-							<!-- BEGIN groups -->
-							<option value="{groups.displayName}">{groups.displayName}</option>
-							<!-- END groups -->
+						<select class="form-select" id="disableGroupMentions" name="disableGroupMentions" multiple size="{clamp(groups.length, "5", "15")}">
+							{{{ each groups }}}
+							<option value="{./name}">{./name}</option>
+							{{{ end }}}
 						</select>
 					</div>
 					<div class="mb-3">
