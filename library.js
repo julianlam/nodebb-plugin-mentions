@@ -298,7 +298,7 @@ async function sendNotificationToUids(postData, uids, nidType, notificationText)
 	}
 	const settings = await getSettings();
 	await batch.processArray(uids, async (uids) => {
-		uids = await Privileges.topics.filterUids('read', postData.tid, uids);
+		uids = await Privileges.topics.filterUids('topics:read', postData.tid, uids);
 		if (settings.overrideIgnores !== 'on') {
 			uids = await Topics.filterIgnoringUids(postData.tid, uids);
 		}
