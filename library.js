@@ -608,7 +608,7 @@ async function stripDisallowedFullnames(users) {
 */
 
 SocketPlugins.mentions.getTopicUsers = async (socket, data) => {
-	const canRead = await privileges.topics.can('read', data.tid, socket.uid);
+	const canRead = await privileges.topics.canRead(data.tid, socket.uid);
 	if (!canRead) {
 		throw new Error('[[error:no-privileges]]');
 	}
