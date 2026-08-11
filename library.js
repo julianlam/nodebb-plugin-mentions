@@ -317,17 +317,19 @@ async function sendNotificationToUids(postData, uids, nidType, notificationText)
 async function createNotification(postData, nidType, notificationText) {
 	// postData.sourceContent or postData.content is not parsed yet
 	// this is triggered from action:post.save or action:post.edit
-	await posts.parsePost(postData);
+	// make a copy so we dont mutate postData and break other plugins
+	const postCopy = { ...postData };
+	await posts.parsePost(postCopy);
 
 	return await Notifications.create({
 		type: 'mention',
 		bodyShort: notificationText,
-		bodyLong: postData.content,
-		nid: `tid:${postData.tid}:pid:${postData.pid}:uid:${postData.uid}:${nidType}`,
-		pid: postData.pid,
-		tid: postData.tid,
-		from: postData.uid,
-		path: `/post/${encodeURIComponent(postData.pid)}`,
+		bodyLong: postCopy.content,
+		nid: `tid:${postCopy.tid}:pid:${postCopy.pid}:uid:${postCopy.uid}:${nidType}`,
+		pid: postCopy.pid,
+		tid: postCopy.tid,
+		from: postCopy.uid,
+		path: `/post/${encodeURIComponent(postCopy.pid)}`,
 		importance: 6,
 	});
 }
