@@ -349,6 +349,23 @@ function removePunctuationSuffix(string) {
 	return string.replace(/[!?.]*$/, '');
 }
 
+async function resolveGroupOrCategory(sSlug) {
+	const [groupName, rawCid] = await Promise.all([
+		db.getObjectField('groupslug:groupname', sSlug),
+		categories.getCidByHandle(sSlug),
+	]);
+	const groupExists = groupName && (await db.isSortedSetMember('groups:visible:createtime', groupName));
+
+	let cid = 0;
+	if (rawCid) {
+		const visibleCids = await privileges.categories.filterCids('topics:read', [rawCid], 0);
+		if (visibleCids.includes(rawCid)) {
+			cid = rawCid;
+		}
+	}
+	return { groupExists, cid };
+}
+
 async function getMatches(content, isMarkdown = false) {
 	const splitContent = utility.split(content, isMarkdown, false, true);
 	let matches = [];
@@ -443,10 +460,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 		let groupExists = 0;
 		let cid = 0;
 		if (!uid) {
-			({ groupExists, cid } = await utils.promiseParallel({
-				groupExists: Groups.existsBySlug(slug),
-				cid: categories.getCidByHandle(slug),
-			}));
+			({ groupExists, cid } = await resolveGroupOrCategory(slug));
 		}
 		// Fallback: if nothing resolved and the match has trailing punctuation,
 		// strip it and retry. This preserves the "@user." at end-of-sentence
@@ -459,10 +473,7 @@ Mentions.parseRaw = async (content, type = 'default') => {
 				const strippedSlug = slugify(stripped.slice(1));
 				uid = await User.getUidByUserslug(strippedSlug);
 				if (!uid) {
-					({ groupExists, cid } = await utils.promiseParallel({
-						groupExists: Groups.existsBySlug(strippedSlug),
-						cid: categories.getCidByHandle(strippedSlug),
-					}));
+					({ groupExists, cid } = await resolveGroupOrCategory(strippedSlug));
 				}
 				if (uid || groupExists || cid) {
 					slug = strippedSlug;
