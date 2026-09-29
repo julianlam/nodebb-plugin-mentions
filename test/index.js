@@ -153,6 +153,18 @@ describe('splitter', () => {
 			assert.equal(result[2], '\nafter text');
 		});
 	});
+
+	it('should not take more than expected time', () => {
+		const token = '[text](url';
+		let content = '';
+		const start = Date.now();
+		for (let i = 0; i < 3000; i++) {
+			content += token;
+		}
+		const result = utility.split(content, true, true, true);
+		assert.strictEqual(result[0], content);
+		assert(Date.now() - start < 100, 'operation took too long');
+	});
 });
 
 describe('parser', () => {
